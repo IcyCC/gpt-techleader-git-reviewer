@@ -27,6 +27,7 @@ class CommentHandler:
         """处理评论回复"""
         rate_limiter = RateLimiter()
         logger.info(f"处理评论: {comment.comment_id}")
+        ai_client = AIClient()
 
         # 检查回复次数限制
         key = rate_limiter.get_comment_replies_key(comment.comment_id)

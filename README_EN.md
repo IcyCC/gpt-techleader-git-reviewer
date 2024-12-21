@@ -51,7 +51,7 @@ GITHUB_API_URL=https://api.github.com     # GitHub API URL (may differ for enter
 # GPT Configuration
 GPT_API_KEY=your_gpt_api_key             # OpenAI API Key
 GPT_API_URL=https://api.openai.com/v1    # OpenAI API URL
-GPT_MODEL=gpt-4                          # Model to use, supports gpt-4/gpt-3.5-turbo
+GPT_MODEL=gpt-4                          # Model to use, supports openai model
 GPT_LANGUAGE=english                     # Response language
 
 # Application Configuration

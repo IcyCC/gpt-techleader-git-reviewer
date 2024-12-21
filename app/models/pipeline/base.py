@@ -79,42 +79,42 @@ class ReviewPipeline(BaseModel):
         """获取不同语言的提示模板"""
         templates = {
             "中文": {
-                "system_role": "你是一位专业的代码审查助手，专注于提供有建设性的代码改进建议。",
+                "system_role": "你是代码审查助手。提供简短精确的建议。只关注关键问题。每个文件最多2条评论。",
                 "json_format": (
-                    "请务必使用以下JSON格式返回审查结果,new_line_number是新文件的行号：\n"
+                    "使用以下JSON格式返回结果:\n"
                     "{\n"
-                    '  "summary": "整体总结",\n'
+                    '  "summary": "简短总结",\n'
                     '  "comments": [\n'
                     "    {\n"
                     '      "file_path": "文件路径",\n'
-                    '      "new_line_number": 123,\n'
-                    '      "content": "具体的评论内容",\n'
+                    '      "new_line_number": 行号,\n'
+                    '      "content": "评论内容",\n'
                     '      "type": "suggestion|issue|praise"\n'
                     "    }\n"
                     "  ]\n"
                     "}\n"
                 ),
-                "review_request": "请审查以下代码变更并提供反馈：",
-                "file_review_request": "请审查此文件的实现逻辑：",
+                "review_request": "审查代码变更：",
+                "file_review_request": "审查此文件：",
             },
             "english": {
-                "system_role": "You are a professional code review assistant, focused on providing constructive code improvement suggestions.",
+                "system_role": "You are a code review assistant. Provide brief, precise suggestions. Focus only on critical issues. Maximum 2 comments per file.",
                 "json_format": (
-                    "Please provide your review in the following JSON format, note that the new_line_number refers to the line numbers in the new file.:\n"
+                    "Use this JSON format:\n"
                     "{\n"
-                    '  "summary": "Overall summary",\n'
+                    '  "summary": "brief summary",\n'
                     '  "comments": [\n'
                     "    {\n"
                     '      "file_path": "file path",\n'
-                    '      "new_line_number": 123,\n'
-                    '      "content": "specific comment",\n'
+                    '      "new_line_number": line number,\n'
+                    '      "content": "comment",\n'
                     '      "type": "suggestion|issue|praise"\n'
                     "    }\n"
                     "  ]\n"
                     "}\n"
                 ),
-                "review_request": "Please review the following code changes and provide feedback:",
-                "file_review_request": "Please review the implementation logic in this file:",
+                "review_request": "Review changes:",
+                "file_review_request": "Review file:",
             },
         }
         return templates.get(lang, templates["english"])
