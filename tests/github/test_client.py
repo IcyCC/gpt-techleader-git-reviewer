@@ -7,10 +7,11 @@ from pathlib import Path
 project_root = str(Path(__file__).parent.parent.parent)
 sys.path.append(project_root)
 
-from app.infra.git.github.client import GitHubClient
 from app.core.config import get_settings
+from app.infra.git.github.client import GitHubClient
 
 settings = get_settings()
+
 
 async def test_get_merge_request():
     """测试获取 Pull Request 信息"""
@@ -31,12 +32,13 @@ async def test_get_merge_request():
         print(f"Test failed: {str(e)}")
         return False
 
+
 async def run_tests():
     """运行所有测试"""
     tests = [
         ("Test Get Pull Request", test_get_merge_request),
     ]
-    
+
     results = []
     for test_name, test_func in tests:
         print(f"\nRunning {test_name}...")
@@ -46,11 +48,12 @@ async def run_tests():
         except Exception as e:
             print(f"Test error: {str(e)}")
             results.append((test_name, False))
-    
+
     print("\nTest Results:")
     for test_name, result in results:
         status = "✅ PASSED" if result else "❌ FAILED"
         print(f"{status} - {test_name}")
 
+
 if __name__ == "__main__":
-    asyncio.run(run_tests()) 
+    asyncio.run(run_tests())

@@ -5,8 +5,3 @@ include = '\.pyi?$'
 
 [tool.isort]
 profile = "black"
-multi-line-output = 3
-include-trailing-comma = true
-force-grid-wrap = 0
-use-parentheses = true
-ensure-newline-before-comments = true

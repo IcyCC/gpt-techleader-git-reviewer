@@ -1,18 +1,21 @@
-from typing import List, Dict, Optional, Union
-from openai import OpenAI
-from app.infra.config.settings import get_settings
+import json
+import logging
+import os
 import uuid
 from datetime import datetime
-from app.infra.cache.redis_client import RedisClient
-import json
-import os
 from pathlib import Path
-import logging
+from typing import Dict, List, Optional, Union
+
+from openai import OpenAI
 from pydantic import BaseModel
+
+from app.infra.cache.redis_client import RedisClient
+from app.infra.config.settings import get_settings
 from app.infra.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
 
 class Message:
     def __init__(self, role: str, content: str):
@@ -24,14 +27,14 @@ class Message:
         return {
             "role": self.role,
             "content": self.content,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
+
 
 class AIClient:
     def __init__(self):
         self.client = OpenAI(
-            api_key=settings.GPT_API_KEY,
-            base_url=settings.GPT_API_URL
+            api_key=settings.GPT_API_KEY, base_url=settings.GPT_API_URL
         )
         self.model = settings.GPT_MODEL
         self.redis_client = RedisClient()
@@ -50,10 +53,7 @@ class AIClient:
         history = await self.redis_client.get_chat_history(session_id)
         if history:
             return [
-                Message(
-                    role=msg["role"],
-                    content=msg["content"]
-                ) for msg in history
+                Message(role=msg["role"], content=msg["content"]) for msg in history
             ]
         return []
 
@@ -110,7 +110,7 @@ class AIClient:
         messages: List[Message],
         session_id: Optional[str] = None,
         temperature: float = 0.7,
-        stream: bool = False
+        stream: bool = False,
     ) -> str:
         """发送消息到 AI 并获取回复"""
         try:
@@ -123,8 +123,12 @@ class AIClient:
 
             # 检查速率限制
             key = self.rate_limiter.get_ai_requests_key()
-            if not await self.rate_limiter.check_and_increment(key, settings.MAX_AI_REQUESTS_PER_HOUR):
-                raise RuntimeError(f"已达到每小时 AI 请求限制 ({settings.MAX_AI_REQUESTS_PER_HOUR})")
+            if not await self.rate_limiter.check_and_increment(
+                key, settings.MAX_AI_REQUESTS_PER_HOUR
+            ):
+                raise RuntimeError(
+                    f"已达到每小时 AI 请求限制 ({settings.MAX_AI_REQUESTS_PER_HOUR})"
+                )
 
             logger.info("开始 AI 对话")
             # 如果提供了session_id，获取历史记录
@@ -132,22 +136,22 @@ class AIClient:
             if session_id:
                 history = await self.get_chat_history(session_id)
                 chat_messages.extend([msg.to_dict() for msg in history])
-            
+
             # 添加新消息
             chat_messages.extend([msg.to_dict() for msg in messages])
-            
+
             # 调用 API
             completion = self.client.chat.completions.create(
                 model=self.model,
-                messages=[{
-                    "role": msg["role"],
-                    "content": msg["content"]
-                } for msg in chat_messages],
+                messages=[
+                    {"role": msg["role"], "content": msg["content"]}
+                    for msg in chat_messages
+                ],
                 timeout=self.timeout,
                 temperature=temperature,
-                stream=stream
+                stream=stream,
             )
-            
+
             # 获取响应
             if stream:
                 full_response = []
@@ -166,11 +170,13 @@ class AIClient:
 
             # 如果有session_id，保存对话历史
             if session_id:
-                chat_messages.append({
-                    "role": "assistant",
-                    "content": response_text,
-                    "timestamp": datetime.utcnow().isoformat()
-                })
+                chat_messages.append(
+                    {
+                        "role": "assistant",
+                        "content": response_text,
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                )
                 await self.redis_client.set_chat_history(session_id, chat_messages)
 
             return response_text

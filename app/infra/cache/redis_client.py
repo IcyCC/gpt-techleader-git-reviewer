@@ -1,9 +1,12 @@
-from typing import Optional, List, Dict
 import json
+from typing import Dict, List, Optional
+
 import aioredis
+
 from app.infra.config.settings import get_settings
 
 settings = get_settings()
+
 
 class RedisClient:
     def __init__(self):
@@ -26,4 +29,4 @@ class RedisClient:
     async def delete_chat_history(self, session_id: str):
         """删除聊天历史"""
         key = f"chat:history:{session_id}"
-        await self.redis.delete(key) 
+        await self.redis.delete(key)

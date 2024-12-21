@@ -1,26 +1,29 @@
+import logging
 from datetime import datetime
-from app.models.git import MergeRequest
-from app.models.comment import Comment, CommentType
+
 from app.infra.ai.client import AIClient, Message
 from app.infra.config.settings import get_settings
-from .base import ReviewPipeline, PipelineResult, AIReviewResponse
-import logging
+from app.models.comment import Comment, CommentType
+from app.models.git import MergeRequest
+
+from .base import AIReviewResponse, PipelineResult, ReviewPipeline
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
+
 class LogicReviewPipeline(ReviewPipeline):
     """业务逻辑审查流水线"""
+
     def __init__(self):
         super().__init__(
-            name="Logic Review",
-            description="Review business logic and implementation"
+            name="Logic Review", description="Review business logic and implementation"
         )
 
     def _get_system_prompt(self) -> str:
         """获取系统提示"""
         templates = self.get_prompt_template(settings.GPT_LANGUAGE)
-        
+
         if settings.GPT_LANGUAGE == "中文":
             return (
                 f"{templates['system_role']}\n"
@@ -72,10 +75,9 @@ class LogicReviewPipeline(ReviewPipeline):
                 f"File: {file_diff.file_name}\n"
                 f"```diff\n{file_diff.diff_content}\n```"
             )
-        
+
         all_diffs = "\n\n".join(files_content)
-        
-        
+
         # 构建业务上下文
         business_context = (
             f"Pull Request 信息:\n"
@@ -85,27 +87,25 @@ class LogicReviewPipeline(ReviewPipeline):
             f"分支: {mr.source_branch} -> {mr.target_branch}\n\n"
             f"代码变更:\n{all_diffs}"
         )
-        
+
         prompt = Message(
             "user",
             f"{templates['review_request']}\n"
             f"请从业务角度分析这个PR的目的和实现：\n\n"
-            f"{business_context}"
+            f"{business_context}",
         )
-        
+
         overview_response = await ai_client.chat(
-            [system_prompt, prompt],
-            session_id=session_id
+            [system_prompt, prompt], session_id=session_id
         )
         try:
             overview_result = AIReviewResponse.parse_raw_response(overview_response)
         except Exception:
             logger.exception(f"解析AI响应失败: {overview_response[:200]}...")
             overview_result = AIReviewResponse(
-                summary=f"解析AI响应失败, {overview_response}...",
-                comments=[]
+                summary=f"解析AI响应失败, {overview_response}...", comments=[]
             )
-        
+
         # 添加评论，过滤掉纯赞扬性质的评论
         for ai_comment in overview_result.comments:
             if ai_comment.type == "praise":
@@ -114,7 +114,4 @@ class LogicReviewPipeline(ReviewPipeline):
             all_comments.append(comment)
 
         logger.info(f"业务逻辑审查完成: {mr.mr_id}, 生成评论数: {len(all_comments)}")
-        return PipelineResult(
-            comments=all_comments,
-            summary=overview_result.summary
-        )
+        return PipelineResult(comments=all_comments, summary=overview_result.summary)

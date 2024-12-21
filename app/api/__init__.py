@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.api.endpoints import webhook, review
+
+from app.api.endpoints import review, webhook
 
 api_router = APIRouter()
 
