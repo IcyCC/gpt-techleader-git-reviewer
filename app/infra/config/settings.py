@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     REDIS_CHAT_TTL: int = 3600
 
     # AI响应缓存配置
-    USE_AI_CACHE: bool = False
+    USE_AI_DEBUG_CACHE: bool = False
     AI_CACHE_DIR: str = "app/infra/cache/mock_responses"
 
     class Config:
