@@ -2,7 +2,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-
+from app.services.discussion_service import DiscussionService
 # 添加项目根目录到 Python 路径
 project_root = str(Path(__file__).parent.parent.parent)
 sys.path.append(project_root)
@@ -36,6 +36,7 @@ async def test_list_comments():
     client = GitHubClient()
     mr = await client.get_merge_request("IcyCC", "gpt-techleader-git-reviewer", "20")
     comments = await client.list_comments("IcyCC", "gpt-techleader-git-reviewer", mr)
+    discussions = await DiscussionService().build_discussions(mr_id=mr.mr_id, owner=mr.owner, repo=mr.repo)
     
 
 async def run_tests():
