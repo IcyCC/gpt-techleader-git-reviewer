@@ -96,8 +96,6 @@ class CommentHandler:
         context += f"Pull Request 信息：\n"
         context += f"标题: {mr.title}\n"
         context += f"描述: {mr.description}\n"
-        context += f"作者: {mr.author}\n"
-        context += f"分支: {mr.source_branch} -> {mr.target_branch}\n\n"
 
         # 找到与当前讨论相关的文件
         discussion_file = self._get_discussion_file(mr, discussion)

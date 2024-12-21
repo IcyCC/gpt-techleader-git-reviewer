@@ -51,11 +51,11 @@ class AIClient:
     ) -> List[Dict[str, str]]:
         """截断消息以确保不超过最大 token 限制"""
         total_tokens = 0
-
         # 从最新的消息开始计算
         for msg in reversed(messages):
             msg_tokens = self._count_tokens(msg["content"])
             total_tokens = total_tokens + msg_tokens
+        logger.info(f"消息总 token: {total_tokens}")
         if total_tokens > self.max_tokens:
             raise RuntimeError(f"消息总 token 超过最大限制: {total_tokens}, 最大限制: {self.max_tokens}")
         return messages
