@@ -29,64 +29,70 @@ class StaticAnalysisPipeline(ReviewPipeline):
             return (
                 f"{templates['system_role']}\n"
                 f"{templates['json_format']}\n"
-                "重点关注以下方面：\n"
-                "1. 代码风格和格式\n"
+                "关注：\n"
+                "1. 代码风格\n"
                 "2. 命名规范\n"
-                "3. 基本代码异味\n"
-                "4. 潜在的语法问题"
+                "3. 代码异味\n"
+                "4. 潜在问题"
             )
         else:
             return (
                 f"{templates['system_role']}\n"
                 f"{templates['json_format']}\n"
                 "Focus on:\n"
-                "1. Code style and formatting\n"
-                "2. Naming conventions\n"
-                "3. Basic code smells\n"
-                "4. Potential syntax issues"
+                "1. Code style\n"
+                "2. Naming\n"
+                "3. Code smells\n"
+                "4. Potential issues"
             )
 
     async def review(self, mr: MergeRequest) -> PipelineResult:
+        ai_client = AIClient()
+        session_id = ai_client.generate_session_id()
+        templates = self.get_prompt_template(settings.GPT_LANGUAGE)
+
+        # 构建包含所有文件变更的提示
+        files_content = []
+        for file_diff in mr.file_diffs:
+            # 只包含变更的部分，不包含完整文件内容
+            files_content.append(
+                f"File: {file_diff.file_name}\n"
+                f"```diff\n{file_diff.diff_content}\n```"
+            )
+
+        all_diffs = "\n\n".join(files_content)
+
+        system_prompt = Message("system", self._get_system_prompt())
+        prompt = Message(
+            "user",
+            f"{templates['review_request']}\n"
+            f"Title: {mr.title}\n"
+            f"Changes:\n{all_diffs}",
+        )
+
+        response = await ai_client.chat([system_prompt, prompt], session_id=session_id)
         try:
-            logger.info(f"开始静态分析: {mr.mr_id}")
-            ai_client = AIClient()
-            session_id = ai_client.generate_session_id()
-            templates = self.get_prompt_template(settings.GPT_LANGUAGE)
-
-            # 构建包含所有文件变更的提示
-            files_content = []
-            for file_diff in mr.file_diffs:
-                files_content.append(
-                    f"File: {file_diff.file_name}\n"
-                    f"```\n{file_diff.diff_content}\n```"
-                )
-
-            all_diffs = "\n\n".join(files_content)
-
-            system_prompt = Message("system", self._get_system_prompt())
-            prompt = Message(
-                "user",
-                f"{templates['review_request']}\n"
-                f"Pull Request Title: {mr.title}\n"
-                f"Description: {mr.description}\n\n"
-                f"Changes:\n{all_diffs}",
-            )
-
-            response = await ai_client.chat(
-                [system_prompt, prompt], session_id=session_id
-            )
             ai_review = AIReviewResponse.parse_raw_response(response)
+        except Exception:
+            logger.exception(f"解析AI响应失败: {response[:200]}...")
+            ai_review = AIReviewResponse(
+                summary="解析审查响应失败", comments=[]
+            )
 
-            # 创建评论
-            comments = []
-            for ai_comment in ai_review.comments:
-                if ai_comment.type == "praise":
-                    continue
+        # 创建评论，每个文件最多保留2条最重要的评论
+        comments = []
+        file_comment_count = {}
+        for ai_comment in ai_review.comments:
+            if ai_comment.type == "praise":
+                continue
+            
+            file_path = ai_comment.file_path
+            if file_path not in file_comment_count:
+                file_comment_count[file_path] = 0
+            
+            if file_comment_count[file_path] < 2:  # 限制每个文件最多2条评论
                 comment = self._from_ai_comment(self.name, ai_comment, mr.mr_id)
                 comments.append(comment)
+                file_comment_count[file_path] += 1
 
-            logger.info(f"静态分析完成: {mr.mr_id}, 生成评论数: {len(comments)}")
-            return PipelineResult(comments=comments, summary=ai_review.summary)
-
-        except Exception:
-            logger.exception(f"静态分析失败: {mr.mr_id}")
+        return PipelineResult(comments=comments, summary=ai_review.summary)
