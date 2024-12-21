@@ -161,7 +161,7 @@ class AIClient:
             chat_messages.extend([msg.to_dict() for msg in messages])
 
             # 截断消息以符合 token 限制
-            chat_messages = self._truncate_messages(chat_messages)
+            self._check_max_tokens(chat_messages)
 
             # 调用 API
             completion = self.client.chat.completions.create(
