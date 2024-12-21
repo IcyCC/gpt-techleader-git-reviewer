@@ -11,6 +11,21 @@ class DiscussionService:
     def __init__(self):
         self.git_client = GitHubClient()
 
+    def _build_reply_tree(
+        self, comment: Comment, reply_map: Dict[str, List[Comment]]
+    ) -> List[Comment]:
+        """递归构建回复树"""
+        replies = []
+        direct_replies = reply_map.get(comment.comment_id, [])
+        
+        for reply in direct_replies:
+            # 递归获取这条回复的所有子回复
+            sub_replies = self._build_reply_tree(reply, reply_map)
+            replies.append(reply)
+            replies.extend(sub_replies)
+        
+        return replies
+
     async def build_discussions(
         self, owner: str, repo: str, mr_id: str
     ) -> List[Discussion]:
@@ -21,8 +36,6 @@ class DiscussionService:
         # 获取所有评论
         comments = await self.git_client.list_comments(owner, repo, mr)
 
-        # 构建评论树
-        comment_map: Dict[str, Comment] = {c.comment_id: c for c in comments}
         root_comments: List[Comment] = []
         reply_map: Dict[str, List[Comment]] = {}
 
@@ -40,10 +53,11 @@ class DiscussionService:
         # 构建讨论列表
         discussions = []
         for root_comment in root_comments:
-            replies = reply_map.get(root_comment.comment_id, [])
+            # 递归获取所有回复
+            all_replies = self._build_reply_tree(root_comment, reply_map)
             # 按时间排序回复
-            replies.sort(key=lambda x: x.created_at)
-            discussion = Discussion.from_comments(root_comment, replies)
+            all_replies.sort(key=lambda x: x.created_at)
+            discussion = Discussion.from_comments(root_comment, all_replies)
             discussions.append(discussion)
 
         # 按创建时间排序讨论
