@@ -1,13 +1,38 @@
-# AI Code Reviewer
+# GPT TECH LEADER GIT REVIEWER
+
+[English Version](README_EN.md)
 
 AI 驱动的代码审查助手，自动为 GitHub Pull Requests 提供代码审查和建议。
 
 ## 功能特点
 
-- 自动代码审查：当 PR 创建或更新时自动触发审查
+> [!NOTE]  
+> 可以在本repo提MR, 体验功能, 样例MR(MR: https://github.com/IcyCC/gpt-techleader-git-reviewer/pull/5)
+
+- 自动代码审查：当 PR 创建或更新时自动触发, 对代码风格和业务逻辑进行审查
 - 智能评论回复：对开发者的评论进行智能回复
-- 代码质量分析：检查代码风格、潜在问题和改进建议
-- 完整的讨论支持：支持评论追踪和问题解决
+- 支持github
+
+## 快速开始
+
+1. 克隆仓库：
+```bash
+git clone https://github.com/IcyCC/gpt-techleader-git-reviewer.git
+cd gpt-techleader-git-reviewer
+```
+
+2. 配置环境：
+```bash
+vim .env
+# 编辑 .env 文件填写配置
+```
+
+3. 启动服务：
+```bash
+# 使用 Docker
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
 
 ## 配置说明
 
@@ -25,7 +50,7 @@ GITHUB_API_URL=https://api.github.com     # GitHub API 地址（企业版可能�
 GPT_API_KEY=your_gpt_api_key             # OpenAI API 密钥
 GPT_API_URL=https://api.openai.com/v1    # OpenAI API 地址
 GPT_MODEL=gpt-4                          # 使用的模型，支持 gpt-4/gpt-3.5-turbo
-GPT_LANGUAGE=中文                        # 回复语言
+GPT_LANGUAGE=��文                        # 回复语言
 
 # 应用配置
 DEBUG=true                               # 调试模式
@@ -40,51 +65,6 @@ RATE_LIMIT_EXPIRE=3600                  # 速率限制过期时间（秒）
 MAX_AI_REQUESTS=100                     # 每小时最大 AI 请求次数
 MAX_MR_REVIEWS=20                       # 每小时最大审查 PR 次数
 MAX_COMMENT_REPLIES=5                   # 每条评论最大回复次数
-```
-
-### Docker 配置
-
-项目支持 Docker 部署，可以通过以下环境变量配置容器：
-
-```yaml
-version: '3'
-services:
-  app:
-    build: .
-    ports:
-      - "8000:8000"
-    environment:
-      - GITHUB_TOKEN=your_token
-      - GPT_API_KEY=your_key
-      # ... 其他环境变量
-    volumes:
-      - ./logs:/app/logs  # 日志持久化
-```
-
-
-
-## 快速开始
-
-1. 克隆仓库：
-```bash
-git clone https://github.com/your-username/ai-code-reviewer.git
-cd ai-code-reviewer
-```
-
-2. 配置环境：
-```bash
-cp .env.example .env
-# 编辑 .env 文件填写配置
-```
-
-3. 启动服务：
-```bash
-# 使用 Docker
-docker-compose up -d
-
-# 或直接运行
-pip install -r requirements.txt
-uvicorn app.main:app --reload
 ```
 
 ## 参与贡献
@@ -103,9 +83,6 @@ uvicorn app.main:app --reload
    - 使用 `black` 格式化代码：`black .`
    - 使用 `isort` 排序导入：`isort .`
    - 遵循 PEP 8 规范
-
-
-
 
 3. 文档
    - 更新 API 文档
@@ -126,6 +103,5 @@ uvicorn app.main:app --reload
 
 ## 联系我们
 
-- 提交 Issue
-- 发送邮件至：your-email@example.com
-- 加入讨论组：[Discussion](https://github.com/your-username/ai-code-reviewer/discussions) 
+微信群
+![微信群](./docs/wx.png)
