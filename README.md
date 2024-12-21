@@ -52,8 +52,8 @@ GITHUB_API_URL=https://api.github.com     # GitHub API 地址（企业版可能�
 # GPT 配置
 GPT_API_KEY=your_gpt_api_key             # OpenAI API 密钥
 GPT_API_URL=https://api.openai.com/v1    # OpenAI API 地址
-GPT_MODEL=gpt-4                          # 使用的模型，支持 gpt-4/gpt-3.5-turbo
-GPT_LANGUAGE=��文                        # 回复语言
+GPT_MODEL=gpt-4                          # 使用的模型，支持openai模型
+GPT_LANGUAGE=中文                         # 回复语言
 
 # 应用配置
 DEBUG=true                               # 调试模式
