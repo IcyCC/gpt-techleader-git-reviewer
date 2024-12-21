@@ -217,12 +217,9 @@ class GitHubClient(GitClientBase):
 
         comments = []
         for comment_data in comments_data:
-            try:
-                comment = await self._convert_github_comment_to_model(
-                    owner, repo, mr, comment_data
-                )
-            except Exception as e:
-                import ipdb;ipdb.set_trace()
+            comment = await self._convert_github_comment_to_model(
+                owner, repo, mr, comment_data
+            )
             comments.append(comment)
         return comments
 
