@@ -1,0 +1,9 @@
+mkdir ai-code-reviewer
+cd ai-code-reviewer
+python -m venv venv
+# Windows
+.\venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+
+pip install fastapi uvicorn python-dotenv requests 
