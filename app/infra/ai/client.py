@@ -172,7 +172,6 @@ class AIClient:
                 timeout=self.timeout,
                 temperature=temperature,
                 stream=stream,
-                max_tokens=self.max_tokens,
             )
 
             # 获取响应
