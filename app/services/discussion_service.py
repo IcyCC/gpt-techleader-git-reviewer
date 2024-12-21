@@ -8,21 +8,43 @@ from app.models.comment import Comment, CommentType, Discussion
 class DiscussionService:
     """讨论服务，负责管理代码审查相关的讨论"""
 
+    MAX_REPLY_DEPTH = 10  # 最大回复深度限制
+
     def __init__(self):
         self.git_client = GitHubClient()
 
     def _build_reply_tree(
-        self, comment: Comment, reply_map: Dict[str, List[Comment]]
+        self, comment: Comment, reply_map: Dict[str, List[Comment]], current_depth: int = 0
     ) -> List[Comment]:
-        """递归构建回复树"""
+        """递归构建回复树
+        
+        Args:
+            comment: 当前评论
+            reply_map: 回复映射表
+            current_depth: 当前递归深度
+        
+        Returns:
+            List[Comment]: 所有回复的列表
+        """
+        # 如果当前深度已经达到最大深度，返回空列表
+        if current_depth >= self.MAX_REPLY_DEPTH:
+            return []
+
         replies = []
         direct_replies = reply_map.get(comment.comment_id, [])
         
         for reply in direct_replies:
-            # 递归获取这条回复的所有子回复
-            sub_replies = self._build_reply_tree(reply, reply_map)
+            # 如果添加这条回复会超过最大深度限制，则跳过
+            if len(replies) >= self.MAX_REPLY_DEPTH - current_depth:
+                break
+                
             replies.append(reply)
-            replies.extend(sub_replies)
+            # 递归获取这条回复的子回复（深度+1）
+            if current_depth + 1 < self.MAX_REPLY_DEPTH:
+                sub_replies = self._build_reply_tree(reply, reply_map, current_depth + 1)
+                # 确保不超过最大深度限制
+                remaining_slots = self.MAX_REPLY_DEPTH - current_depth - len(replies)
+                replies.extend(sub_replies[:remaining_slots])
         
         return replies
 
@@ -53,8 +75,8 @@ class DiscussionService:
         # 构建讨论列表
         discussions = []
         for root_comment in root_comments:
-            # 递归获取所有回复
-            all_replies = self._build_reply_tree(root_comment, reply_map)
+            # 递归获取所有回复（从深度0开始）
+            all_replies = self._build_reply_tree(root_comment, reply_map, 0)
             # 按时间排序回复
             all_replies.sort(key=lambda x: x.created_at)
             discussion = Discussion.from_comments(root_comment, all_replies)

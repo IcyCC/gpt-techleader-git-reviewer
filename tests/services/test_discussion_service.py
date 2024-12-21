@@ -43,7 +43,7 @@ def sample_comments():
         mr_id="1",
     )
 
-    # 创建第一层回复
+    # 创建第一��回复
     reply1 = Comment(
         comment_id="reply1",
         author="developer",
@@ -206,3 +206,137 @@ async def test_multiple_root_comments(discussion_service, mock_mr, sample_commen
     discussions_by_root = {d.root_comment.comment_id: d for d in discussions}
     assert len(discussions_by_root["root1"].comments) == 4  # 根评论 + 3个回复
     assert len(discussions_by_root["root2"].comments) == 2  # 根评论 + 1个回复 
+
+
+@pytest.mark.asyncio
+async def test_max_reply_depth(discussion_service, mock_mr):
+    """测试最大回复深度限制"""
+    base_time = datetime.utcnow()
+    
+    # 创建一个超过最大深度的回复链
+    comments = []
+    prev_comment = None
+    
+    # 创建根评论
+    root = Comment(
+        comment_id="root",
+        author="reviewer",
+        content="Root comment",
+        created_at=base_time,
+        comment_type=CommentType.FILE,
+        mr_id="1",
+    )
+    comments.append(root)
+    prev_comment = root
+    
+    # 创建15层回复（超过最大深度10）
+    for i in range(15):
+        reply = Comment(
+            comment_id=f"reply_{i}",
+            author="user",
+            content=f"Reply level {i+1}",
+            created_at=base_time + timedelta(minutes=i+1),
+            comment_type=CommentType.REPLY,
+            mr_id="1",
+            reply_to=prev_comment.comment_id,
+        )
+        comments.append(reply)
+        prev_comment = reply
+
+    # Mock GitHub 客户端方法
+    discussion_service.git_client.get_merge_request = AsyncMock(return_value=mock_mr)
+    discussion_service.git_client.list_comments = AsyncMock(return_value=comments)
+
+    # 获取讨论列表
+    discussions = await discussion_service.build_discussions(
+        mock_mr.owner, mock_mr.repo, mock_mr.mr_id
+    )
+
+    # 验证结果
+    assert len(discussions) == 1
+    discussion = discussions[0]
+    
+    # 验证评论数量（应该是最大深度+1，因为包含根评论）
+    assert len(discussion.comments) == discussion_service.MAX_REPLY_DEPTH + 1
+    
+    # 验证最后一条评论的ID应该是 reply_9（第10层回复）
+    last_comment = discussion.comments[-1]
+    assert last_comment.comment_id == f"reply_{discussion_service.MAX_REPLY_DEPTH-1}"
+
+
+@pytest.mark.asyncio
+async def test_mixed_depth_replies(discussion_service, mock_mr):
+    """测试混合深度的回复"""
+    base_time = datetime.utcnow()
+    
+    # 创建根评论
+    root = Comment(
+        comment_id="root",
+        author="reviewer",
+        content="Root comment",
+        created_at=base_time,
+        comment_type=CommentType.FILE,
+        mr_id="1",
+    )
+    
+    # 创建第一层回复
+    reply1 = Comment(
+        comment_id="reply1",
+        author="user1",
+        content="First level reply",
+        created_at=base_time + timedelta(minutes=1),
+        comment_type=CommentType.REPLY,
+        mr_id="1",
+        reply_to="root",
+    )
+    
+    # 创建第二层回复
+    reply2 = Comment(
+        comment_id="reply2",
+        author="user2",
+        content="Second level reply",
+        created_at=base_time + timedelta(minutes=2),
+        comment_type=CommentType.REPLY,
+        mr_id="1",
+        reply_to="reply1",
+    )
+    
+    # 创建一个新的回复链（12层，超过限制）
+    deep_replies = []
+    prev_comment = root
+    for i in range(12):
+        reply = Comment(
+            comment_id=f"deep_reply_{i}",
+            author="user",
+            content=f"Deep reply level {i+1}",
+            created_at=base_time + timedelta(minutes=i+10),
+            comment_type=CommentType.REPLY,
+            mr_id="1",
+            reply_to=prev_comment.comment_id,
+        )
+        deep_replies.append(reply)
+        prev_comment = reply
+
+    # 合并所有评论
+    all_comments = [root, reply1, reply2] + deep_replies
+
+    # Mock GitHub 客户端方法
+    discussion_service.git_client.get_merge_request = AsyncMock(return_value=mock_mr)
+    discussion_service.git_client.list_comments = AsyncMock(return_value=all_comments)
+
+    # 获取讨论列表
+    discussions = await discussion_service.build_discussions(
+        mock_mr.owner, mock_mr.repo, mock_mr.mr_id
+    )
+
+    # 验证结果
+    assert len(discussions) == 1
+    discussion = discussions[0]
+    
+    # 验证评论总数不超过最大深度限制
+    total_comments = len(discussion.comments)
+    assert total_comments <= discussion_service.MAX_REPLY_DEPTH + 1
+    
+    # 验证第一个回复链完整保留
+    assert "reply1" in [c.comment_id for c in discussion.comments]
+    assert "reply2" in [c.comment_id for c in discussion.comments]
