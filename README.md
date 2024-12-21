@@ -61,25 +61,7 @@ services:
       - ./logs:/app/logs  # 日志持久化
 ```
 
-### 审查规则配置
 
-可以通过修改 `app/config/review_rules.py` 自定义代码审查规则：
-
-```python
-REVIEW_RULES = {
-    'max_file_size': 1024 * 1024,  # 最大文件大小限制
-    'ignore_files': [              # 忽略的文件类型
-        '*.pyc',
-        '*.log',
-        '.git/*'
-    ],
-    'review_focus': [             # 重点关注的方面
-        'security',
-        'performance',
-        'maintainability'
-    ]
-}
-```
 
 ## 快速开始
 
