@@ -1,18 +1,22 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, List, Dict
 from enum import Enum
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel
+
 
 class CommentType(str, Enum):
     GENERAL = "general"  # 普通评论
-    FILE = "file"        # 文件级别评论
-    REPLY = "reply"      # 回复评论
+    FILE = "file"  # 文件级别评论
+    REPLY = "reply"  # 回复评论
+
 
 class CommentPosition(BaseModel):
     file_path: str
     new_line_number: int
     old_line_number: Optional[int] = None
     diff_range: Optional[str] = None
+
 
 class Comment(BaseModel):
     comment_id: str
@@ -27,8 +31,10 @@ class Comment(BaseModel):
     parent_comment_id: Optional[str] = None
     reactions: Dict[str, int] = {}  # 例如: {"thumbs_up": 2, "heart": 1}
 
+
 class Discussion(BaseModel):
     """讨论主题"""
+
     discussion_id: str
     mr_id: str
     title: str
@@ -40,22 +46,27 @@ class Discussion(BaseModel):
     resolved: bool = False
 
     @classmethod
-    def from_comments(cls, root_comment: Comment, replies: List[Comment]) -> "Discussion":
+    def from_comments(
+        cls, root_comment: Comment, replies: List[Comment]
+    ) -> "Discussion":
         """从根评论和回复列表创建讨论"""
         all_comments = [root_comment] + replies
-        
+
         # 检查是否有包含 [RESOLVED] 标记的回复
         resolved = any("[RESOLVED]" in comment.content for comment in replies)
-        
+
         return cls(
             discussion_id=f"discussion_{root_comment.comment_id}",
             mr_id=root_comment.mr_id,
-            title=root_comment.content[:50] + "..." if len(root_comment.content) > 50 else root_comment.content,
+            title=(
+                root_comment.content[:50] + "..."
+                if len(root_comment.content) > 50
+                else root_comment.content
+            ),
             created_at=root_comment.created_at,
             updated_at=max(c.created_at for c in all_comments),
             comments=all_comments,
             root_comment=root_comment,
             status="resolved" if resolved else "active",
-            resolved=resolved
+            resolved=resolved,
         )
-    
