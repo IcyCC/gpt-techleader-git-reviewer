@@ -52,12 +52,7 @@ class AIClient:
 
     def _count_tokens(self, text: str) -> int:
         """计算文本的 token 数量"""
-        try:
-            return len(self.encoding.encode(text))
-        except Exception as e:
-            logger.warning(f"计算 token 失败: {e}")
-            # 如果计算失败，使用字符数作为粗略估计
-            return len(text) // 4
+        return len(text) // 4
 
     def _truncate_messages(
         self, messages: List[Dict[str, str]]
