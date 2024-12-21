@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from openai import OpenAI
-from pydantic import BaseModel
 
 from app.infra.cache.redis_client import RedisClient
 from app.infra.config.settings import get_settings
