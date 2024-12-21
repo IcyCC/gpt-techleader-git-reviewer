@@ -171,9 +171,10 @@ class GitHubClient(GitClientBase):
         """将 GitHub API 返回的评论数据转换为 Comment 模型"""
         # 创建评论位置（如果有）
         position = None
-        if "path" in comment_data and "line" in comment_data:
+        if "path" in comment_data and ("line" in comment_data or "original_line" in comment_data):
+            line_no = comment_data["line"] if comment_data["line"] else comment_data["original_line"]
             position = CommentPosition(
-                file_path=comment_data["path"], new_line_number=comment_data["line"]
+                file_path=comment_data["path"], new_line_number=line_no
             )
 
         # 确定评论类型
