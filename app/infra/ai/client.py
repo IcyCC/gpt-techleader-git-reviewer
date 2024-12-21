@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import uuid
@@ -42,6 +41,27 @@ class AIClient:
         self.cache_dir = Path(settings.AI_CACHE_DIR)
         self.timeout = settings.GPT_TIMEOUT
         self.rate_limiter = RateLimiter()
+        self.max_tokens = settings.MAX_TOKENS
+        
+    def _count_tokens(self, text: str) -> int:
+        """计算文本的 token 数量"""
+        return len(text) // 4
+
+    def _check_max_tokens(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
+        """截断消息以确保不超过最大 token 限制"""
+        total_tokens = 0
+
+        # 从最新的消息开始计算
+        for msg in reversed(messages):
+            msg_tokens = self._count_tokens(msg["content"])
+            total_tokens = total_tokens + msg_tokens
+        if total_tokens > self.max_tokens:
+            raise RuntimeError(f"消息总 token 超过最大限制: {total_tokens}, 最大限制: {self.max_tokens}")
+        return messages
+
+    
 
     @staticmethod
     def generate_session_id() -> str:
@@ -140,6 +160,9 @@ class AIClient:
             # 添加新消息
             chat_messages.extend([msg.to_dict() for msg in messages])
 
+            # 截断消息以符合 token 限制
+            self._check_max_tokens(chat_messages)
+
             # 调用 API
             completion = self.client.chat.completions.create(
                 model=self.model,
@@ -150,6 +173,7 @@ class AIClient:
                 timeout=self.timeout,
                 temperature=temperature,
                 stream=stream,
+                max_tokens=self.max_tokens,
             )
 
             # 获取响应

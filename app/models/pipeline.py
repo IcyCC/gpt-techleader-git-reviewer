@@ -88,7 +88,7 @@ class ReviewPipeline(BaseModel):
         """获取不同语言的提示模板"""
         templates = {
             "中文": {
-                "system_role": "你是一位专业的代码审查助手，专注于提供有建设性的代码改进建议。",
+                "system_role": "你是一位专业的代码审查助手，专注于提供有建设性的代码改进建议, 节约token尽可能少评论只评论最关键的部分",
                 "json_format": (
                     "请使用以下JSON格式返回审查结果,注意line_number是新文件的行号：\n"
                     "{\n"
@@ -107,7 +107,7 @@ class ReviewPipeline(BaseModel):
                 "file_review_request": "请审查此文件的实现逻辑：",
             },
             "english": {
-                "system_role": "You are a professional code review assistant, focused on providing constructive code improvement suggestions.",
+                "system_role": "You are a professional code review assistant, focused on providing constructive code improvement suggestions,  to save token use as few comments as possible, only comment on the most critical parts",
                 "json_format": (
                     "Please provide your review in the following JSON format, note that the line_number refers to the line numbers in the new file.:\n"
                     "{\n"

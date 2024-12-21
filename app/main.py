@@ -3,8 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.endpoints import review, webhook
 from app.infra.config.settings import get_settings
+from app.infra.config.logging import setup_logging
 
+# 获取配置
 settings = get_settings()
+
+# 设置日志
+setup_logging(debug=settings.DEBUG)
 
 app = FastAPI(
     title="AI Code Reviewer",

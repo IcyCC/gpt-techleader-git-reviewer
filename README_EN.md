@@ -13,6 +13,8 @@ An AI-powered code review assistant that automatically provides code reviews and
 - Smart Comment Replies: Intelligent responses to developer comments
 - GitHub Support
 
+> Code developed by Cursor, freeing up production capacity
+
 ## Quick Start
 
 1. Clone the repository:
@@ -31,7 +33,7 @@ vim .env
 ```bash
 # Using Docker
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
 ```
 
 ## Configuration
