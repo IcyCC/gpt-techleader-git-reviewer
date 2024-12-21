@@ -39,7 +39,7 @@ class AIClient:
         )
         self.model = settings.GPT_MODEL
         self.redis_client = RedisClient()
-        self.use_cache = settings.USE_AI_CACHE
+        self.use_debug_cache = settings.USE_AI_DEBUG_CACHE
         self.cache_dir = Path(settings.AI_CACHE_DIR)
         self.timeout = settings.GPT_TIMEOUT
         self.rate_limiter = RateLimiter()
@@ -105,7 +105,7 @@ class AIClient:
 
     def _get_cached_response(self, messages: List[Message]) -> Optional[str]:
         """从缓存获取响应"""
-        if not self.use_cache:
+        if not self.use_debug_cache:
             return None
 
         try:
@@ -132,7 +132,7 @@ class AIClient:
 
     def _save_to_cache(self, messages: List[Message], response: str):
         """保存响应到缓存"""
-        if not self.use_cache:
+        if not self.use_debug_cache:
             return
 
         try:
@@ -161,7 +161,7 @@ class AIClient:
         """发送消息到 AI 并获取回复"""
         try:
             # 检查是否使用缓存
-            if self.use_cache:
+            if self.use_debug_cache:
                 cached_response = self._get_cached_response(messages)
                 if cached_response:
                     logger.info("使用缓存的响应")
@@ -215,7 +215,7 @@ class AIClient:
             logger.info("AI 响应成功")
 
             # 保存到缓存
-            if self.use_cache:
+            if self.use_debug_cache:
                 self._save_to_cache(messages, response_text)
 
             # 如果有session_id，保存对话历史
