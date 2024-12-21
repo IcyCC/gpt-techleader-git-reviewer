@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     GPT_TEMPERATURE: float = 0.7
     GPT_LANGUAGE: str = "中文"
     GPT_TIMEOUT: int = 1200
-    MAX_TOKENS: int = 30000  # 每次请求的最大 token 数
+    MAX_TOKENS: int = 10000000  # 每次请求的最大 token 数
 
     # 应用配置
     DEBUG: bool = False
