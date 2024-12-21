@@ -92,20 +92,11 @@ class LogicReviewPipeline(ReviewPipeline):
                 summary="解析审查响应失败", comments=[]
             )
 
-        # 创建评论，每个文件最多保留2条最重要的评论
         comments = []
-        file_comment_count = {}
         for ai_comment in ai_review.comments:
             if ai_comment.type == "praise":
                 continue
-            
-            file_path = ai_comment.file_path
-            if file_path not in file_comment_count:
-                file_comment_count[file_path] = 0
-            
-            if file_comment_count[file_path] < 2:  # 限制每个文件最多2条评论
-                comment = self._from_ai_comment(self.name, ai_comment, mr.mr_id)
-                comments.append(comment)
-                file_comment_count[file_path] += 1
+            comment = self._from_ai_comment(self.name, ai_comment, mr.mr_id)
+            comments.append(comment)
 
         return PipelineResult(comments=comments, summary=ai_review.summary)

@@ -7,7 +7,7 @@ An AI-powered code review assistant that automatically provides code reviews and
 ## Features
 
 > [!NOTE]  
-> You can submit a PR to this repo to experience the functionality. Sample PR: https://github.com/IcyCC/gpt-techleader-git-reviewer/pull/18
+> You can submit a PR to this repo to experience the functionality. Sample PR: https://github.com/IcyCC/gpt-techleader-git-reviewer/pull/19
 
 - Automated Code Review: Automatically triggered when PRs are created or updated
 - Smart Comment Replies: Intelligent responses to developer comments

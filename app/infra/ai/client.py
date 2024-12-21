@@ -55,7 +55,7 @@ class AIClient:
         for msg in reversed(messages):
             msg_tokens = self._count_tokens(msg["content"])
             total_tokens = total_tokens + msg_tokens
-        logger.info(f"消息总 token: {total_tokens}")
+        logger.debug(f"消息总 token: {total_tokens}")
         if total_tokens > self.max_tokens:
             raise RuntimeError(f"消息总 token 超过最大限制: {total_tokens}, 最大限制: {self.max_tokens}")
         return messages
@@ -132,86 +132,75 @@ class AIClient:
         stream: bool = False,
     ) -> str:
         """发送消息到 AI 并获取回复"""
-        try:
-            # 检查是否使用缓存
-            if self.use_debug_cache:
-                cached_response = self._get_cached_response(messages)
-                if cached_response:
-                    logger.info("使用缓存的响应")
-                    return cached_response
+        # 检查是否使用缓存
+        if self.use_debug_cache:
+            cached_response = self._get_cached_response(messages)
+            if cached_response:
+                logger.info("使用缓存的响应")
+                return cached_response
 
-            # 检查速率限制
-            key = self.rate_limiter.get_ai_requests_key()
-            if not await self.rate_limiter.check_and_increment(
-                key, settings.MAX_AI_REQUESTS_PER_HOUR
-            ):
-                raise RuntimeError(
-                    f"已达到每小时 AI 请求限制 ({settings.MAX_AI_REQUESTS_PER_HOUR})"
-                )
-
-            logger.info("开始 AI 对话")
-            # 如果提供了session_id，获取历史记录
-            chat_messages = []
-            if session_id:
-                history = await self.get_chat_history(session_id)
-                chat_messages.extend([msg.to_dict() for msg in history])
-
-            # 添加新消息
-            chat_messages.extend([msg.to_dict() for msg in messages])
-
-            # 截断消息以符合 token 限制
-            self._check_max_tokens(chat_messages)
-
-            # 调用 API
-            completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": msg["role"], "content": msg["content"]}
-                    for msg in chat_messages
-                ],
-                timeout=self.timeout,
-                temperature=temperature,
-                stream=stream,
+        # 检查速率限制
+        key = self.rate_limiter.get_ai_requests_key()
+        if not await self.rate_limiter.check_and_increment(
+            key, settings.MAX_AI_REQUESTS_PER_HOUR
+        ):
+            raise RuntimeError(
+                f"已达到每小时 AI 请求限制 ({settings.MAX_AI_REQUESTS_PER_HOUR})"
             )
 
-            # 获取响应
-            if stream:
-                full_response = []
-                for chunk in completion:
-                    if chunk.choices[0].delta.content:
-                        full_response.append(chunk.choices[0].delta.content)
-                response_text = "".join(full_response)
-            else:
-                response_text = completion.choices[0].message.content
+        logger.info("开始 AI 对话")
+        # 如果提供了session_id，获取历史记录
+        chat_messages = []
+        if session_id:
+            history = await self.get_chat_history(session_id)
+            chat_messages.extend([msg.to_dict() for msg in history])
 
-            logger.info("AI 响应成功")
+        # 添加新消息
+        chat_messages.extend([msg.to_dict() for msg in messages])
 
-            # 保存到缓存
-            if self.use_debug_cache:
-                self._save_to_cache(messages, response_text)
+        # 截断消息以符合 token 限制
+        self._check_max_tokens(chat_messages)
 
-            # 如果有session_id，保存对话历史
-            if session_id:
-                chat_messages.append(
-                    {
-                        "role": "assistant",
-                        "content": response_text,
-                        "timestamp": datetime.utcnow().isoformat(),
-                    }
-                )
-                await self.redis_client.set_chat_history(session_id, chat_messages)
+        # 调用 API
+        completion = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": msg["role"], "content": msg["content"]}
+                for msg in chat_messages
+            ],
+            timeout=self.timeout,
+            temperature=temperature,
+            stream=stream,
+        )
 
-            return response_text
+        # 获取响应
+        if stream:
+            full_response = []
+            for chunk in completion:
+                if chunk.choices[0].delta.content:
+                    full_response.append(chunk.choices[0].delta.content)
+            response_text = "".join(full_response)
+        else:
+            response_text = completion.choices[0].message.content
 
-        except Exception as e:
-            logger.exception("AI 对话过程中发生错误")
-            raise
+        # 保存到缓存
+        if self.use_debug_cache:
+            self._save_to_cache(messages, response_text)
+
+        # 如果有session_id，保存对话历史
+        if session_id:
+            chat_messages.append(
+                {
+                    "role": "assistant",
+                    "content": response_text,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+            await self.redis_client.set_chat_history(session_id, chat_messages)
+
+        return response_text
 
     async def clear_chat_history(self, session_id: str):
         """清除聊天历史"""
-        try:
-            await self.redis_client.delete_chat_history(session_id)
-            logger.info(f"清除聊天历史: {session_id}")
-        except Exception as e:
-            logger.exception(f"清除聊天历史失败: {session_id}")
-            raise
+        await self.redis_client.delete_chat_history(session_id)
+        logger.info(f"清除聊天历史: {session_id}")

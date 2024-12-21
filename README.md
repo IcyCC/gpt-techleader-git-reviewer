@@ -8,7 +8,7 @@ AI 驱动的代码审查助手，自动为 GitHub Pull Requests 提供代码审�
 ## 功能特点
 
 > [!NOTE]  
-> 可以在本repo提MR, 体验功能, 样例MR(MR: https://github.com/IcyCC/gpt-techleader-git-reviewer/pull/18)
+> 可以在本repo提MR, 体验功能, 样例MR(MR: https://github.com/IcyCC/gpt-techleader-git-reviewer/pull/19)
 
 - 自动代码审查：当 PR 创建或更新时自动触发, 对代码风格和业务逻辑进行审查
 - 智能评论回复：对开发者的评论进行智能回复
