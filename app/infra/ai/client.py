@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Union
 
 from openai import OpenAI
 from pydantic import BaseModel
+import tiktoken
 
 from app.infra.cache.redis_client import RedisClient
 from app.infra.config.settings import get_settings
@@ -42,6 +43,51 @@ class AIClient:
         self.cache_dir = Path(settings.AI_CACHE_DIR)
         self.timeout = settings.GPT_TIMEOUT
         self.rate_limiter = RateLimiter()
+        self.max_tokens = settings.MAX_TOKENS
+        try:
+            self.encoding = tiktoken.encoding_for_model(self.model)
+        except KeyError:
+            # 如果模型不在 tiktoken 的支持列表中，使用默认编码
+            self.encoding = tiktoken.get_encoding("cl100k_base")
+
+    def _count_tokens(self, text: str) -> int:
+        """计算文本的 token 数量"""
+        try:
+            return len(self.encoding.encode(text))
+        except Exception as e:
+            logger.warning(f"计算 token 失败: {e}")
+            # 如果计算失败，使用字符数作为粗略估计
+            return len(text) // 4
+
+    def _truncate_messages(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
+        """截断消息以确保不超过最大 token 限制"""
+        total_tokens = 0
+        truncated_messages = []
+
+        # 从最新的消息开始计算
+        for msg in reversed(messages):
+            msg_tokens = self._count_tokens(msg["content"])
+            if total_tokens + msg_tokens > self.max_tokens:
+                # 如果这条消息会导致超出限制，截断它
+                available_tokens = self.max_tokens - total_tokens
+                if available_tokens > 100:  # 确保至少保留一些有意义的内容
+                    truncated_content = self.encoding.decode(
+                        self.encoding.encode(msg["content"])[:available_tokens]
+                    )
+                    msg["content"] = truncated_content
+                    truncated_messages.insert(0, msg)
+                break
+            total_tokens += msg_tokens
+            truncated_messages.insert(0, msg)
+
+        if len(truncated_messages) != len(messages):
+            logger.warning(
+                f"消息已被截断以符合 token 限制 ({len(messages)} -> {len(truncated_messages)})"
+            )
+
+        return truncated_messages
 
     @staticmethod
     def generate_session_id() -> str:
@@ -140,6 +186,9 @@ class AIClient:
             # 添加新消息
             chat_messages.extend([msg.to_dict() for msg in messages])
 
+            # 截断消息以符合 token 限制
+            chat_messages = self._truncate_messages(chat_messages)
+
             # 调用 API
             completion = self.client.chat.completions.create(
                 model=self.model,
@@ -150,6 +199,7 @@ class AIClient:
                 timeout=self.timeout,
                 temperature=temperature,
                 stream=stream,
+                max_tokens=self.max_tokens,
             )
 
             # 获取响应
