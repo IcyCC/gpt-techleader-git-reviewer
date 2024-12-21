@@ -60,7 +60,7 @@ class Bot(BaseModel):
         size_checker = SizeChecker(self.name)
         mr_size_result = size_checker.check_mr_size(mr)
         if mr_size_result:
-            return mr_size_result
+            return mr_size_result, []
 
         # 检查文件大小
         large_files, normal_files = size_checker.check_files_size(mr)
