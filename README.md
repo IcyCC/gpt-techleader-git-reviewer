@@ -34,8 +34,15 @@ vim .env
 ```bash
 # 使用 Docker
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
 ```
+
+或者使用docker
+```bash
+docker-compose up -d --build
+```
+
+4. 配置repo的
 
 ## 配置说明
 
@@ -44,31 +51,48 @@ uvicorn app.main:app --reload
 创建 `.env` 文件并配置以下环境变量：
 
 ```env
-# GitHub 配置
-GITHUB_TOKEN=your_github_token            # GitHub Personal Access Token
-GITHUB_WEBHOOK_SECRET=your_webhook_secret # Webhook 密钥
-GITHUB_API_URL=https://api.github.com     # GitHub API 地址（企业版可能不同）
+# GitHub配置
+GITHUB_TOKEN=github_pat_xxxxx # GitHub Personal Access Token
+GITHUB_WEBHOOK_SECRET=your_webhook_secret # GitHub Webhook 密钥
+GITHUB_REPOS=owner/repository # 格式：用户名/仓库名
 
-# GPT 配置
-GPT_API_KEY=your_gpt_api_key             # OpenAI API 密钥
-GPT_API_URL=https://api.openai.com/v1    # OpenAI API 地址
-GPT_MODEL=gpt-4                          # 使用的模型，支持openai模型
-GPT_LANGUAGE=中文                         # 回复语言
+# GPT配置
+GPT_API_KEY=sk-xxxxxx # GPT API密钥
+GPT_API_URL=https://api.example.com/v1 # GPT API地址
+GPT_MODEL=claude-3-5-sonnet-20240620 # GPT模型版本
+GPT_LANGUAGE=中文 # AI响应语言
+GPT_TIMEOUT=1200 # API超时时间(秒)
+
+# AI响应缓存配置
+USE_AI_DEBUG_CACHE=false # 是否使用AI调试缓存
+AI_CACHE_DIR=app/infra/cache/mock_responses # AI响应缓存目录
 
 # 应用配置
-DEBUG=true                               # 调试模式
-ENVIRONMENT=development                  # 环境：development/production
+DEBUG=true # 调试模式
+ENVIRONMENT=development # 环境设置
 
-# Redis 配置
-REDIS_URL=redis://localhost:6379         # Redis 连接地址
-REDIS_CHAT_TTL=3600                     # 聊天记录保存时间（秒）
+# 限流配置
+MAX_MR_REVIEWS_PER_HOUR=5 # 每小时最大PR审查次数
+MAX_AI_REQUESTS_PER_HOUR=100 # 每小时最大AI请求次数
+MAX_TOKENS=200000 # 最大token数
 
-# 速率限制配置
-RATE_LIMIT_EXPIRE=3600                  # 速率限制过期时间（秒）
-MAX_AI_REQUESTS=100                     # 每小时最大 AI 请求次数
-MAX_MR_REVIEWS=20                       # 每小时最大审查 PR 次数
-MAX_COMMENT_REPLIES=5                   # 每条评论最大回复次数
+# Redis配置
+REDIS_URL=redis://localhost:6379 # Redis连接URL
+REDIS_CHAT_TTL=3600 # Redis 聊天记录过期时间(秒)
 ```
+
+### 配置repo
+配置github的webhook, 需要配置webhook的url, 
+```
+http://<host>:<port>/api/v1/webhook/github
+```
+
+开启接受 Which events would you like to trigger this webhook?:
+- Pull request reviews
+- Pull requests
+- Pull request review threads
+- Pull request review comments
+
 
 ## 参与贡献
 
