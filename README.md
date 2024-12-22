@@ -42,7 +42,6 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
 docker-compose up -d --build
 ```
 
-4. 配置repo的
 
 ## 配置说明
 
