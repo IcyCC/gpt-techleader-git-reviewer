@@ -264,21 +264,3 @@ class GitHubClient(GitClientBase):
             logger.exception("webhook 验证过程中发生错误")
             return False
 
-    async def parse_webhook_event(
-        self, request: Request
-    ) -> Optional[tuple[str, str, str]]:
-        """解析 webhook 事件，返回 (owner, repo, pr_number)"""
-        event_type = request.headers.get("X-GitHub-Event")
-        if event_type != "pull_request":
-            return None
-
-        payload = await request.json()
-        action = payload["action"]
-        if action not in ["opened", "reopened", "synchronize"]:
-            return None
-
-        owner = payload["repository"]["owner"]["login"]
-        repo = payload["repository"]["name"]
-        pr_number = str(payload["pull_request"]["number"])
-
-        return owner, repo, pr_number

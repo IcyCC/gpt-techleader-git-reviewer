@@ -40,10 +40,3 @@ class GitClientBase(ABC):
     async def verify_webhook(self, request: Request) -> bool:
         """验证 webhook 请求的合法性"""
         pass
-
-    @abstractmethod
-    async def parse_webhook_event(
-        self, request: Request
-    ) -> Optional[Tuple[str, str, str]]:
-        """解析 webhook 事件，返回 (owner, repo, pr_number)"""
-        pass
