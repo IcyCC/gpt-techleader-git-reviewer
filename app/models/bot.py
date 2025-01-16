@@ -5,7 +5,8 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel
 
 from app.infra.config.settings import get_settings
-from app.infra.git.github.client import GitHubClient
+from app.infra.git.factory import GitClientFactory
+from app.infra.git.base import GitClientBase
 from app.infra.rate_limiter import RateLimiter
 from app.models.const import BOT_PREFIX
 
@@ -121,7 +122,7 @@ class Bot(BaseModel):
 
     async def review_mr(self, mr: MergeRequest) -> ReviewResult:
         """执行 MR 审查"""
-        git_client = GitHubClient()
+        git_client = GitClientFactory.get_client()
         result, all_comments = await self._handle_review_mr(mr)
         if result.summary:
             summary_comment = Comment(
@@ -147,7 +148,7 @@ class Bot(BaseModel):
         """处理评论回复"""
         comment_handler = CommentHandler(self.name)
         comment, resolved = await comment_handler.handle_comment(mr, comment)
-        git_client = GitHubClient()
+        git_client = GitClientFactory.get_client()
         await self._post_comment(git_client, mr, comment)
         if resolved:
             await git_client.resolve_review_thread(
@@ -157,7 +158,7 @@ class Bot(BaseModel):
 
     @staticmethod
     async def _post_comment(
-        git_client: GitHubClient, mr: MergeRequest, comment: Comment
+        git_client: GitClientBase, mr: MergeRequest, comment: Comment
     ):
         """发布评论到 Git 平台"""
         try:

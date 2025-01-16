@@ -8,9 +8,7 @@ from app.infra.git.gitlab.client import GitLabClient
 
 settings = get_settings()
 
-class GitServiceType(str, Enum):
-    GITHUB = "github"
-    GITLAB = "gitlab"
+
 
 class GitClientFactory:
     """Git 客户端工厂类"""
@@ -20,12 +18,11 @@ class GitClientFactory:
     @classmethod
     def create_client(cls) -> GitClientBase:
         """创建 Git 客户端实例"""
-        if cls._instance is None:
-            service_type = GitServiceType(settings.GIT_SERVICE.lower())
-            
-            if service_type == GitServiceType.GITHUB:
+        service_type = settings.GIT_SERVICE.lower()
+        if cls._instance is None:            
+            if service_type == "github":
                 cls._instance = GitHubClient()
-            elif service_type == GitServiceType.GITLAB:
+            elif service_type == "gitlab":
                 cls._instance = GitLabClient()
             else:
                 raise ValueError(f"Unsupported Git service type: {settings.GIT_SERVICE}")

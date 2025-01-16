@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.infra.git.github.client import GitHubClient
+from app.infra.git.factory import GitClientFactory
 from app.models.bot import Bot
 from app.models.comment import Comment
 from app.models.git import MergeRequest
@@ -12,7 +12,7 @@ class ReviewerService:
         self.bot = Bot(
             bot_id="1", name="AI Code Reviewer", status="active", current_reviews=[]
         )
-        self.git_client = GitHubClient()
+        self.git_client = GitClientFactory.get_client()
 
     async def review_mr(self, owner: str, repo: str, mr_id: str) -> ReviewResult:
         print("review_mr", owner, repo, mr_id)

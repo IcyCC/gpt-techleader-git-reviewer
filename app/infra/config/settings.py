@@ -18,9 +18,17 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: str
     GITHUB_WEBHOOK_SECRET: Optional[str] = None
     GITHUB_API_URL: str = "https://api.github.com"
-
+    
     # 允许的仓库列表，格式：owner1/repo1,owner2/repo2
     GITHUB_REPOS: str = ""
+    
+    GITLAB_API_URL: str = "https://gitlab.com/api/v4"
+    GITLAB_TOKEN: str
+    GITLAB_WEBHOOK_SECRET: Optional[str] = None
+
+    # 允许的仓库列表，格式：owner1/repo1,owner2/repo2
+    GITLAB_REPOS: str = ""
+    GIT_SERVICE: str = "gitlab"
 
     # AI 审查限制
     MAX_FILES_PER_MR: int = 20  # MR 最大文件数

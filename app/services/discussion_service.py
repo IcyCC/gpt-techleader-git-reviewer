@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Dict, List
 
-from app.infra.git.github.client import GitHubClient
+from app.infra.git.factory import GitClientFactory
 from app.models.comment import Comment, CommentType, Discussion
 
 
@@ -11,7 +11,7 @@ class DiscussionService:
     MAX_REPLY_DEPTH = 10  # 最大回复深度限制
 
     def __init__(self):
-        self.git_client = GitHubClient()
+        self.git_client = GitClientFactory.get_client()
 
     def _build_reply_tree(
         self, comment: Comment, reply_map: Dict[str, List[Comment]], current_depth: int = 0

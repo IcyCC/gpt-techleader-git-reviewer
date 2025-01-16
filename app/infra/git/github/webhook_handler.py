@@ -5,9 +5,8 @@ from fastapi import HTTPException, Request
 
 from app.infra.config.settings import get_settings
 from app.models.const import BOT_PREFIX
-from app.models.git import MergeRequest
-
-from .client import GitHubClient
+from app.infra.git.factory import GitClientFactory
+from app.infra.git.base import GitClientBase
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -17,7 +16,7 @@ class GitHubWebhookHandler:
     """GitHub Webhook 处理器"""
 
     def __init__(self):
-        self.client = GitHubClient()
+        self.client = GitClientFactory.get_client()
 
     async def handle_webhook(self, request: Request) -> Tuple[str, Optional[Any]]:
         """处理 GitHub webhook 请求
