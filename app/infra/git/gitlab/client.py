@@ -135,6 +135,24 @@ class GitLabClient(GitClientBase):
             if comment.comment_type == CommentType.FILE:
                 # 创建文件评论
                 assert comment.position is not None, "File comment requires position"
+                
+                # 获取 MR 的 commits 信息
+                commits = await self._request(
+                    "GET",
+                    f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/commits"
+                )
+                
+                if not commits:
+                    raise ValueError("No commits found in merge request")
+                
+                # 获取最新的 commit
+                latest_commit = commits[0]  # GitLab API 返回的 commits 按时间倒序排列
+                # 获取目标分支的最新 commit
+                mr_info = await self._request(
+                    "GET",
+                    f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}"
+                )
+                
                 url = f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/discussions"
                 await self._request(
                     "POST",
@@ -145,14 +163,15 @@ class GitLabClient(GitClientBase):
                             "position_type": "text",
                             "new_path": comment.position.file_path,
                             "new_line": comment.position.new_line_number,
-                            "base_sha": None,  # GitLab 需要这些额外信息
-                            "start_sha": None,
-                            "head_sha": None,
+                            "base_sha": mr_info["diff_refs"]["base_sha"],
+                            "start_sha": mr_info["diff_refs"]["start_sha"],
+                            "head_sha": mr_info["diff_refs"]["head_sha"],
                         }
                     },
                 )
             elif comment.comment_type == CommentType.REPLY:
                 # 回复评论
+                import ipdb;ipdb.set_trace()
                 assert comment.reply_to is not None, "Reply comment requires reply_to"
                 url = f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/discussions/{comment.reply_to}/notes"
                 await self._request(

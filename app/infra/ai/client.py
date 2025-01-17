@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Union
-
+import httpx
 from openai import OpenAI
 
 from app.infra.cache.redis_client import RedisClient
@@ -31,8 +31,9 @@ class Message:
 
 class AIClient:
     def __init__(self):
+        self.http_client = httpx.Client(verify=False)
         self.client = OpenAI(
-            api_key=settings.GPT_API_KEY, base_url=settings.GPT_API_URL
+            api_key=settings.GPT_API_KEY, base_url=settings.GPT_API_URL, http_client=self.http_client
         )
         self.model = settings.GPT_MODEL
         self.redis_client = RedisClient()

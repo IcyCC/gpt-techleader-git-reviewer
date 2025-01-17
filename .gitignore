@@ -71,3 +71,6 @@ dump.rdb
 app/infra/cache/mock_responses/ 
 
 *.rdb
+
+tests/services/test_reviewer_service_gitlab.py
+tests/gitlab/test_client.py

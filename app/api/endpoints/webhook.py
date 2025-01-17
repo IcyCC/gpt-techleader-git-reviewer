@@ -5,7 +5,6 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
 from app.infra.git.github.webhook_handler import GitHubWebhookHandler
 from app.infra.git.gitlab.webhook_handler import GitLabWebhookHandler
-from app.infra.git.factory import GitServiceType
 from app.models.const import BOT_PREFIX
 from app.models.git import MergeRequest
 from app.models.review import ReviewResult

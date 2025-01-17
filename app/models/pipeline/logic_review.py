@@ -70,12 +70,21 @@ class LogicReviewPipeline(ReviewPipeline):
         all_diffs = "\n\n".join(files_content)
 
         # 构建业务上下文
-        business_context = (
-            f"PR信息:\n"
-            f"标题: {mr.title}\n"
-            f"描述: {mr.description}\n"
-            f"变更:\n{all_diffs}"
-        )
+
+        if settings.GPT_LANGUAGE  == "中文":
+            business_context = (
+                f"PR信息:\n"
+                f"标题: {mr.title}\n"
+                f"描述: {mr.description}\n"
+                f"变更:\n{all_diffs}"
+            )
+        else:
+            business_context = (
+                f"PR information:\n"
+                f"Title: {mr.title}\n"
+                f"Description: {mr.description}\n"
+                f"Changes:\n{all_diffs}"
+            )
 
         system_prompt = Message("system", self._get_system_prompt())
         prompt = Message(
