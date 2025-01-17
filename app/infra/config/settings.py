@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     # AI 审查限制
     MAX_FILES_PER_MR: int = 20  # MR 最大文件数
     MAX_LINES_PER_FILE: int = 1000  # 单个文件最大行数
+    MAX_BYTES_PER_FILE: int = 1024 * 102  # 单个文件最大字节数
 
     # 系统限制
     MAX_AI_REQUESTS_PER_HOUR: int = 30  # 每小时最大 AI 请求次数

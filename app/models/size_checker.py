@@ -42,7 +42,7 @@ class SizeChecker:
         for file_diff in mr.file_diffs:
             if file_diff.diff_content:
                 lines = file_diff.diff_content.count("\n") + 1
-                if lines > self.settings.MAX_LINES_PER_FILE:
+                if lines > self.settings.MAX_LINES_PER_FILE or len(file_diff.diff_content) > self.settings.MAX_BYTES_PER_FILE:
                     large_files.append((file_diff.file_name, lines))
                 else:
                     normal_files.append(file_diff)
