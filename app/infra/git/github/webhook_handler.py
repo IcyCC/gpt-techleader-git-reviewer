@@ -53,7 +53,7 @@ class GitHubWebhookHandler(BaseWebhookHandler):
         # 检查仓库是否在允许列表中
         if not settings.is_repo_allowed(owner, repo):
             logger.warning(f"仓库不在允许列表中: {owner}/{repo}")
-            return event_type, None
+            raise HTTPException(status_code=400, detail="Repository not in allowlist")
 
         # 处理不同类型的事件
         if event_type == "ping":

@@ -47,13 +47,13 @@ class GitLabWebhookHandler(BaseWebhookHandler):
         # Check if repository is allowed
         if not settings.is_repo_allowed(owner, repo):
             logger.warning(f"Repository not in allowlist: {owner}/{repo}")
-            return None
+            raise HTTPException(status_code=400, detail="Repository not in allowlist")
 
         # Handle different event types
         if event_type == "System Hook":
             if payload.get("event_type") == "project_create":
                 logger.info(f"Handling ping event: {owner}/{repo}")
-                return None
+                return WebHookEvent(event_type=WebHookEventType.PING, event_data={})
 
         elif event_type == "Merge Request Hook":
             action = payload.get("object_attributes", {}).get("action")
