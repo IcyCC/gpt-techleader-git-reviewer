@@ -37,8 +37,7 @@ class GitLabWebhookHandler(BaseWebhookHandler):
         if not project:
             raise HTTPException(status_code=400, detail="Missing project information")
 
-        owner = project.get("namespace")
-        repo = project.get("name")
+        owner, repo = project["path_with_namespace"].split("/")
         logger.info(f"Received webhook event: {event_type}, {owner}/{repo}")
 
         if not owner or not repo:
