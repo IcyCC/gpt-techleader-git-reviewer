@@ -1,5 +1,6 @@
 import asyncio
 from typing import Any, Dict, Union
+import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
@@ -11,6 +12,8 @@ from app.models.git import MergeRequest
 from app.models.review import ReviewResult
 from app.services.reviewer_service import ReviewerService
 from app.infra.config.settings import get_settings
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter()
 settings = get_settings()
@@ -106,4 +109,5 @@ async def handle_git_webhook(
             return {"message": f"Event {event_info.event_type} ignored"}
 
     except Exception as e:
+        logger.exception(f"Error handling webhook: {e}")
         raise HTTPException(status_code=500, detail=str(e))
