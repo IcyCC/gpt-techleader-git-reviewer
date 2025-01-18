@@ -18,7 +18,7 @@ github_handler = GitHubWebhookHandler()
 gitlab_handler = GitLabWebhookHandler()
 
 
-@router.get("/api/v1/webhook/github")
+@router.get("/webhook/github")
 async def verify_webhook():
     return {"status": "Webhook verified", "message": "GET request received"}
 
