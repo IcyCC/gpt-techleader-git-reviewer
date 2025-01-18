@@ -13,18 +13,22 @@ logger = logging.getLogger(__name__)
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Code Reviewer"
     API_V1_STR: str = "/api/v1"
+    
+    # Git 服务类型配置
+    GIT_SERVICE: str = "gitlab"  # 'github' or 'gitlab'
 
-    # GitHub配置
-    GITHUB_TOKEN: str
+    # GitHub配置 (当 GIT_SERVICE == 'github' 时使用)
+    GITHUB_TOKEN: Optional[str] = None
     GITHUB_WEBHOOK_SECRET: Optional[str] = None
     GITHUB_API_URL: str = "https://api.github.com"
+    GITHUB_REPOS: str = ""  # 格式：owner1/repo1,owner2/repo2
     
-    # 允许的仓库列表，格式：owner1/repo1,owner2/repo2
-    GITHUB_REPOS: str = ""
-    
+    # GitLab配置 (当 GIT_SERVICE == 'gitlab' 时使用)
     GITLAB_API_URL: str = "https://gitlab.com/api/v4"
-    GITLAB_TOKEN: str
+    GITLAB_TOKEN: Optional[str] = None
     GITLAB_WEBHOOK_SECRET: Optional[str] = None
+    GITLAB_REPOS: str = ""  # 格式：owner1/repo1,owner2/repo2
+
 
     # 允许的仓库列表，格式：owner1/repo1,owner2/repo2
     GITLAB_REPOS: str = ""
@@ -62,17 +66,39 @@ class Settings(BaseSettings):
     USE_AI_DEBUG_CACHE: bool = False
     AI_CACHE_DIR: str = "app/infra/cache/mock_responses"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
 
     @property
     def github_repos(self) -> List[Dict[str, Any]]:
         """解析仓库配置字符串"""
+        if self.GIT_SERVICE != "github":
+            return []
+            
         try:
             repos = []
             for repo_str in self.GITHUB_REPOS.split(","):
+                if not repo_str:
+                    continue
+                if "/" not in repo_str:
+                    logger.warning(f"无效的仓库格式: {repo_str}")
+                    continue
+                owner, name = repo_str.strip().split("/")
+                repos.append({"owner": owner, "name": name, "enabled": True})
+            return repos
+        except Exception as e:
+            logger.error(f"解析仓库配置失败: {e}")
+            return []
+
+    @property
+    def gitlab_repos(self) -> List[Dict[str, Any]]:
+        """解析 GitLab 仓库配置字符串"""
+        if self.GIT_SERVICE != "gitlab":
+            return []
+            
+        try:
+            repos = []
+            for repo_str in self.GITLAB_REPOS.split(","):
+                if not repo_str:
+                    continue
                 if "/" not in repo_str:
                     logger.warning(f"无效的仓库格式: {repo_str}")
                     continue
@@ -85,30 +111,41 @@ class Settings(BaseSettings):
 
     def is_repo_allowed(self, owner: str, repo: str) -> bool:
         """检查仓库是否在允许列表中"""
-        try:
-            return any(
-                r["owner"] == owner and r["name"] == repo and r.get("enabled", True)
-                for r in self.github_repos
-            )
-        except Exception as e:
-            logger.error(f"检查仓库权限失败: {e}")
-            return False
+        repos = self.gitlab_repos if self.GIT_SERVICE == "gitlab" else self.github_repos
+        return any(
+            r["owner"] == owner and r["name"] == repo and r.get("enabled", True)
+            for r in repos
+        )
+
+    def validate_git_config(self):
+        """验证 Git 服务配置的完整性"""
+        if self.GIT_SERVICE not in ["github", "gitlab"]:
+            raise ValueError("GIT_SERVICE must be either 'github' or 'gitlab'")
+            
+        if self.GIT_SERVICE == "github":
+            if not self.GITHUB_TOKEN:
+                raise ValueError("GITHUB_TOKEN is required when using GitHub service")
+        else:  # gitlab
+            if not self.GITLAB_TOKEN:
+                raise ValueError("GITLAB_TOKEN is required when using GitLab service")
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = True
 
 
 @lru_cache()
 def get_settings() -> Settings:
-    """
-    获取应用配置，使用缓存避免重复加载
-    """
+    """获取应用配置，使用缓存避免重复加载"""
     try:
-        # 获取项目根目录
         root_dir = Path(__file__).parent.parent.parent.parent
         env_file = root_dir / ".env"
-        # 打印调试信息
         print(f"Looking for .env file at: {env_file}")
         print(f"File exists: {env_file.exists()}")
 
         settings = Settings()
+        settings.validate_git_config()  # 验证配置的完整性
         return settings
     except Exception as e:
         print(f"Error loading settings: {str(e)}")
