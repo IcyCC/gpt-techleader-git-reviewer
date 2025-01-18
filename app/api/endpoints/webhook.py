@@ -3,6 +3,7 @@ from typing import Any, Dict, Union
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
+from app.infra.git.base_webhook_handler import WebHookEvent, WebHookEventType
 from app.infra.git.github.webhook_handler import GitHubWebhookHandler
 from app.infra.git.gitlab.webhook_handler import GitLabWebhookHandler
 from app.models.const import BOT_PREFIX
@@ -72,37 +73,37 @@ async def handle_git_webhook(
             raise HTTPException(status_code=400, detail=f"Unsupported git service: {service}")
 
         # Verify and parse webhook
-        event_type, event_info = await handler.handle_webhook(request)
-        print(f"Received {event_type} event:", event_info)
+        event_info = await handler.handle_webhook(request)
+        print(f"Received  event:", event_info)
 
         if not event_info:
             return {"message": "Event ignored"}
 
         # Handle ping event
-        if event_type == "ping":
+        if event_info.event_type == WebHookEventType.PING:
             return {
                 "message": "Webhook configured successfully",
                 "event": "ping",
-                "data": event_info,
+                "data": {},
             }
 
         # Handle MR/PR event
-        if event_type in ["pull_request", "merge_request"]:
-            owner, repo, mr_id = event_info
-            background_tasks.add_task(process_pr, owner, repo, mr_id, reviewer_service)
-            return {"message": f"MR review task for {owner}/{repo}#{mr_id} scheduled"}
+        if event_info.event_type == WebHookEventType.MERGE_REQUEST:
+            event_data = event_info.event_data
+            background_tasks.add_task(process_pr, event_data.owner, event_data.repo, event_data.mr_id, reviewer_service)
+            return {"message": f"MR review task for {event_data.owner}/{event_data.repo}#{event_data.mr_id} scheduled"}
 
         # Handle comment event
-        elif event_type in ["pull_request_review_comment", "merge_request_comment"]:
-            owner, repo, mr_id, comment_id, _ = event_info
+        elif event_info.event_type == WebHookEventType.MERGE_REQUEST_COMMENT:
+            event_data = event_info.event_data
             background_tasks.add_task(
-                process_comment, owner, repo, mr_id, comment_id, reviewer_service
+                process_comment, event_data.owner, event_data.repo, event_data.mr_id, event_data.comment_id, reviewer_service
             )
             return {
-                "message": f"Comment processing task for {owner}/{repo}#{mr_id} scheduled"
+                "message": f"Comment processing task for {event_data.owner}/{event_data.repo}#{event_data.mr_id} scheduled"
             }
         else:
-            return {"message": f"Event {event_type} ignored"}
+            return {"message": f"Event {event_info.event_type} ignored"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
