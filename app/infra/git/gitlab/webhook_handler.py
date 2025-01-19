@@ -56,14 +56,13 @@ class GitLabWebhookHandler(BaseWebhookHandler):
                 return WebHookEvent(event_type=WebHookEventType.PING, event_data={})
 
         elif event_type == "Merge Request Hook":
-            action = payload.get("object_attributes", {}).get("action")
-            if action != "open":
-                logger.info(f"Ignoring MR event: {action}")
-                return None
-
-            mr_id = str(payload["object_attributes"]["iid"])
-            logger.info(f"Handling MR open event: {owner}/{repo}!{mr_id}")
-            return WebHookEvent(event_type=WebHookEventType.MERGE_REQUEST, event_data=MergeRequestEvent(owner=owner, repo=repo, mr_id=mr_id))
+            mr_state = payload.get("object_attributes", {}).get("state")
+            mr_draft = payload.get("object_attributes", {}).get("draft")
+            if mr_state == 'opened' and not mr_draft:
+                mr_id = str(payload["object_attributes"]["iid"])
+                logger.info(f"Handling MR open event: {owner}/{repo}!{mr_id}")
+                return WebHookEvent(event_type=WebHookEventType.MERGE_REQUEST, event_data=MergeRequestEvent(owner=owner, repo=repo, mr_id=mr_id))
+            return None
 
         elif event_type == "Note Hook":
             if payload.get("object_attributes", {}).get("noteable_type") != "MergeRequest":
@@ -85,6 +84,7 @@ class GitLabWebhookHandler(BaseWebhookHandler):
                 return None
 
             logger.info(f"Handling comment reply event: {owner}/{repo}!{mr_id} - {comment_id}")
+            return None
             return WebHookEvent(event_type=WebHookEventType.MERGE_REQUEST_COMMENT, event_data=MergeRequestCommentEvent(owner=owner, repo=repo, mr_id=mr_id, comment_id=comment_id, comment_body=comment_body))
 
         logger.info(f"Ignoring unknown event type: {event_type}")
