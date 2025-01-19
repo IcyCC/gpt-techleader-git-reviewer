@@ -127,26 +127,6 @@ async def test_build_discussions(discussion_service, mock_mr, sample_comments):
     assert comment_ids == ["root1", "reply1", "reply1_1", "reply1_1_1"]
 
 
-@pytest.mark.asyncio
-async def test_resolve_discussion(discussion_service, mock_mr):
-    """测试解决讨论"""
-    # Mock 相关方法
-    discussion_service.git_client.get_merge_request = AsyncMock(return_value=mock_mr)
-    discussion_service.git_client.resolve_review_thread = AsyncMock()
-
-    # 测试解决讨论
-    await discussion_service.resolve_discussion(
-        mock_mr.owner, mock_mr.repo, mock_mr.mr_id, "comment1"
-    )
-
-    # 验证方法调用
-    discussion_service.git_client.get_merge_request.assert_called_once_with(
-        mock_mr.owner, mock_mr.repo, mock_mr.mr_id
-    )
-    discussion_service.git_client.resolve_review_thread.assert_called_once_with(
-        mock_mr.owner, mock_mr.repo, mock_mr.mr_id, "comment1"
-    )
-
 
 @pytest.mark.asyncio
 async def test_empty_discussion(discussion_service, mock_mr):

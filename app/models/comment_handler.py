@@ -78,44 +78,79 @@ class CommentHandler:
         return None
 
     def _build_prompts(self, mr: MergeRequest, discussion) -> tuple[Message, Message]:
-        """构建 AI 提示"""
-        system_prompt = Message(
-            "system",
-            "你是一位代码审查助手。请根据上下文提供有帮助的回复。\n"
-            "如果你认为问题已经解决，请在回复的末尾添加 '[RESOLVED]'，并简要说明解决原因。\n"
-            "如果问题尚未解决，请继续提供建设性的建议。\n"
-            "请确保你的回复专业、清晰且有建设性。",
-        )
+        """Build AI prompts based on language settings"""
+        settings = get_settings()
+        
+        if settings.GPT_LANGUAGE == "中文":
+            system_prompt = Message(
+                "system",
+                "你是一位代码审查助手。请根据上下文提供有帮助的回复。\n"
+                "如果你认为问题已经解决，请在回复的末尾添加 '[RESOLVED]'，并简要说明解决原因。\n"
+                "如果问题尚未解决，请继续提供建设性的建议。\n"
+                "请确保你的回复专业、清晰且有建设性。",
+            )
+        else:
+            system_prompt = Message(
+                "system",
+                "You are a code review assistant. Please provide helpful responses based on the context.\n"
+                "If you think the issue is resolved, add '[RESOLVED]' at the end of your response with a brief explanation.\n"
+                "If the issue is not resolved, continue providing constructive suggestions.\n"
+                "Please ensure your response is professional, clear, and constructive.",
+            )
 
         context = self._build_context(mr, discussion)
         return system_prompt, Message("user", context)
 
     def _build_context(self, mr: MergeRequest, discussion) -> str:
-        """构建上下文信息"""
-        context = "这是一个代码审查的讨论。\n\n"
-        context += f"Pull Request 信息：\n"
-        context += f"标题: {mr.title}\n"
-        context += f"描述: {mr.description}\n"
+        """Build context information based on language settings"""
+        settings = get_settings()
+        
+        if settings.GPT_LANGUAGE == "中文":
+            context = "这是一个代码审查的讨论。\n\n"
+            context += f"Pull Request 信息：\n"
+            context += f"标题: {mr.title}\n"
+            context += f"描述: {mr.description}\n"
+        else:
+            context = "This is a code review discussion.\n\n"
+            context += f"Pull Request Information:\n"
+            context += f"Title: {mr.title}\n"
+            context += f"Description: {mr.description}\n"
 
-        # 找到与当前讨论相关的文件
+        # Find file related to current discussion
         discussion_file = self._get_discussion_file(mr, discussion)
         if discussion_file:
-            context += "相关文件变更：\n"
-            context += f"文件: {discussion_file.file_name}\n"
+            if settings.GPT_LANGUAGE == "中文":
+                context += "相关文件变更：\n"
+                context += f"文件: {discussion_file.file_name}\n"
+            else:
+                context += "Related File Changes:\n"
+                context += f"File: {discussion_file.file_name}\n"
             if discussion_file.diff_content:
                 context += f"```diff\n{discussion_file.diff_content}\n```\n"
         else:
-            logger.warning(f"无法找到讨论相关的文件: {discussion.comments}")
+            if settings.GPT_LANGUAGE == "中文":
+                logger.warning(f"无法找到讨论相关的文件: {discussion.comments}")
+            else:
+                logger.warning(f"Could not find file related to discussion: {discussion.comments}")
 
-        # 添加讨论历史
-        context += "\n当前讨论历史：\n"
+        # Add discussion history
+        if settings.GPT_LANGUAGE == "中文":
+            context += "\n当前讨论历史：\n"
+        else:
+            context += "\nCurrent Discussion History:\n"
         for disc_comment in discussion.comments:
             context += f"{disc_comment.author}: {disc_comment.content}\n"
 
-        context += "\n请根据上述上下文：\n"
-        context += "1. 如果问题已经解决，请在回复末尾添加 [RESOLVED] 并说明原因\n"
-        context += "2. 如果问题未解决，请继续提供建议\n"
-        context += "3. 请直接给出回复内容，不要给出任何解释, 回复只针对当前讨论, 并且尽可能简短。\n"
+        if settings.GPT_LANGUAGE == "中文":
+            context += "\n请根据上述上下文：\n"
+            context += "1. 如果问题已经解决，请在回复末尾添加 [RESOLVED] 并说明原因\n"
+            context += "2. 如果问题未解决，请继续提供建议\n"
+            context += "3. 请直接给出回复内容，不要给出任何解释, 回复只针对当前讨论, 并且尽可能简短。\n"
+        else:
+            context += "\nBased on the above context:\n"
+            context += "1. If the issue is resolved, add [RESOLVED] at the end with the reason\n"
+            context += "2. If the issue is not resolved, continue providing suggestions\n"
+            context += "3. Provide direct response without explanations, focus on current discussion, and be concise.\n"
 
         return context
 
@@ -134,11 +169,3 @@ class CommentHandler:
                 )
         return None
 
-    async def _try_resolve_discussion(self, mr: MergeRequest, comment: Comment):
-        """尝试解决讨论"""
-        try:
-            await self.discussion_service.resolve_discussion(
-                mr.owner, mr.repo, mr.mr_id, comment.comment_id
-            )
-        except Exception as e:
-            logger.exception("解决讨论失败")

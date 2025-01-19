@@ -144,16 +144,12 @@ class Bot(BaseModel):
 
     async def handle_comment(
         self, mr: MergeRequest, comment: Comment
-    ) -> Optional[Comment]:
+    ) -> Comment:
         """处理评论回复"""
         comment_handler = CommentHandler(self.name)
-        comment, resolved = await comment_handler.handle_comment(mr, comment)
+        comment, _ = await comment_handler.handle_comment(mr, comment)
         git_client = GitClientFactory.get_client()
         await self._post_comment(git_client, mr, comment)
-        if resolved:
-            await git_client.resolve_review_thread(
-                mr.owner, mr.repo, mr.mr_id, comment.comment_id
-            )
         return comment
 
     @staticmethod

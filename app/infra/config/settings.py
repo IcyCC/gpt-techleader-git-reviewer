@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     MAX_COMMENT_REPLIES: int = 2  # 每个评论最大回复次数
     MAX_MR_REVIEWS_PER_HOUR: int = 5  # 每小时最大处理 MR 数
     RATE_LIMIT_EXPIRE: int = 3600  # 限制过期时间（秒）
+    MAX_MR_REVIEWS: int = 3  # 每个 MR 最多允许被检查的次数
 
     # GPT配置
     GPT_API_KEY: str

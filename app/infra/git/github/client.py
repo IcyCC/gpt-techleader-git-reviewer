@@ -160,11 +160,6 @@ class GitHubClient(GitClientBase):
             logger.exception(f"创建评论失败: {owner}/{repo}#{comment.mr_id}")
             raise
 
-    async def resolve_review_thread(
-        self, owner: str, repo: str, mr_id: str, thread_id: str
-    ):
-        pass
-
     async def _convert_github_comment_to_model(
         self, owner: str, repo: str, mr: MergeRequest, comment_data: dict
     ) -> Comment:

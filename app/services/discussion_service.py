@@ -86,20 +86,3 @@ class DiscussionService:
         discussions.sort(key=lambda x: x.created_at)
 
         return discussions
-
-    async def resolve_discussion(
-        self, owner: str, repo: str, mr_id: str, comment_id: str
-    ):
-        """将讨论标记为已解决
-
-        Args:
-            owner: 仓库所有者
-            repo: 仓库名称
-            mr_id: PR ID
-            comment_id: 要解决的评论 ID
-        """
-        # 获取 MR 信息
-        mr = await self.git_client.get_merge_request(owner, repo, mr_id)
-
-        # 调用 GitHub API 解决讨论
-        await self.git_client.resolve_review_thread(owner, repo, mr.mr_id, comment_id)
