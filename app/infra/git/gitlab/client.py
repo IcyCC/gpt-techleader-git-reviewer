@@ -137,7 +137,6 @@ Error: {str(e)}
             
             if comment.comment_type == CommentType.FILE:
                 # 创建文件评论
-                # 
                 assert comment.position is not None, "File comment requires position"
                 url = f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/discussions"
                 mr_version = await self._get_latest_mr_version(mr.project_id, comment.mr_id)
@@ -155,14 +154,27 @@ Error: {str(e)}
                 if comment.position.old_file_path:
                     comment_body["position"]["old_path"] = comment.position.old_file_path
                 
-                # only support comment on new file and new line
-                # TODO: support comment on old file and old line, 
-                # ref: https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff
-                await self._request(
-                    "POST",
-                    url,
-                    json=comment_body,
-                )
+                try:
+                    # Try to create file comment first
+                    await self._request(
+                        "POST",
+                        url,
+                        json=comment_body,
+                    )
+                except Exception as e:
+                    # ref:https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff
+                    logger.warning(f"Failed to create file comment, falling back to general comment: {str(e)}")
+                    # Fallback to general comment with file and line info
+                    fallback_content = f"""Failed to create file comment. Adding as MR comment instead.
+File: {comment.position.new_file_path}
+Line: {comment.position.new_line_number}
+Content: {comment.content}"""
+                    
+                    await self._request(
+                        "POST",
+                        f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/notes",
+                        json={"body": fallback_content},
+                    )
             elif comment.comment_type == CommentType.REPLY:
                 # 回复评论
                 assert comment.reply_to is not None, "Reply comment requires reply_to"
