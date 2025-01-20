@@ -23,7 +23,7 @@ class GitLabClient(GitClientBase):
         self.base_url = settings.GITLAB_API_URL
         self.token = settings.GITLAB_TOKEN
         self.webhook_secret = settings.GITLAB_WEBHOOK_SECRET
-        self.timeout = aiohttp.ClientTimeout(total=5)  # 5秒超时
+        self.timeout = aiohttp.ClientTimeout(total=10)  # 5秒超时
 
     async def _request(self, method: str, url: str, **kwargs) -> Any:
         """发送 HTTP 请求到 GitLab API"""
