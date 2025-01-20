@@ -17,12 +17,6 @@ class GitClientBase(ABC):
         """获取合并请求信息"""
         pass
 
-    @abstractmethod
-    async def get_file_content(
-        self, owner: str, repo: str, mr: MergeRequest, file_path: str
-    ) -> Optional[str]:
-        """获取指定文件的内容"""
-        pass
 
     @abstractmethod
     async def create_comment(self, owner: str, repo: str, comment: Comment):

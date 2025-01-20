@@ -58,7 +58,8 @@ class StaticAnalysisPipeline(ReviewPipeline):
         for file_diff in mr.file_diffs:
             # 只包含变更的部分，不包含完整文件内容
             files_content.append(
-                f"File: {file_diff.file_name}\n"
+                f"file_old_path: {file_diff.old_file_path}\n"
+                f"file_new_path: {file_diff.new_file_path}\n"
                 f"```diff\n{file_diff.diff_content}\n```"
             )
 

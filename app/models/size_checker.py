@@ -43,7 +43,7 @@ class SizeChecker:
             if file_diff.diff_content:
                 lines = file_diff.diff_content.count("\n") + 1
                 if lines > self.settings.MAX_LINES_PER_FILE or len(file_diff.diff_content) > self.settings.MAX_BYTES_PER_FILE:
-                    large_files.append((file_diff.file_name, lines))
+                    large_files.append(file_diff)
                 else:
                     normal_files.append(file_diff)
 
@@ -60,7 +60,7 @@ class SizeChecker:
             created_at=datetime.utcnow(),
             comment_type=CommentType.FILE,
             mr_id=mr.mr_id,
-            position=CommentPosition(file_path=file_diff.file_name, new_line_number=1),
+            position=CommentPosition(new_file_path=file_diff.new_file_path, old_file_path=file_diff.old_file_path, new_line_number=1),
         )
 
     def create_large_files_summary(self, large_files: List[FileDiff]) -> str:
@@ -69,6 +69,6 @@ class SizeChecker:
             f"以下文件超过了最大行数限制 ({self.settings.MAX_LINES_PER_FILE} 行)：\n"
         )
         for file_diff in large_files:
-            summary += f"- {file_diff.file_name}: {len(file_diff.diff_content)} 行\n"
+            summary += f"- {file_diff.new_file_path}: {len(file_diff.diff_content)} 行\n"
         summary += "\n建议将大文件拆分为多个小文件，以提高代码的可维护性。"
         return summary

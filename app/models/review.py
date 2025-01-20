@@ -14,7 +14,8 @@ class SeverityLevel(str, Enum):
 
 class CheckItem(BaseModel):
     message: str
-    file_path: Optional[str]
+    old_file_path: Optional[str]
+    new_file_path: Optional[str]
     line_number: Optional[int]
     severity: SeverityLevel
     suggestion: Optional[str]

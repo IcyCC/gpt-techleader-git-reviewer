@@ -121,10 +121,10 @@ class CommentHandler:
         if discussion_file:
             if settings.GPT_LANGUAGE == "中文":
                 context += "相关文件变更：\n"
-                context += f"文件: {discussion_file.file_name}\n"
+                context += f"文件: {discussion_file.old_file_path} TO {discussion_file.new_file_path}\n"
             else:
                 context += "Related File Changes:\n"
-                context += f"File: {discussion_file.file_name}\n"
+                context += f"File: {discussion_file.old_file_path} TO {discussion_file.new_file_path}\n"
             if discussion_file.diff_content:
                 context += f"```diff\n{discussion_file.diff_content}\n```\n"
         else:
@@ -158,12 +158,12 @@ class CommentHandler:
         """获取讨论相关的文件"""
         if discussion.comments:
             first_comment = discussion.comments[0]
-            if first_comment.position and first_comment.position.file_path:
+            if first_comment.position and first_comment.position.new_file_path:
                 return next(
                     (
                         diff
                         for diff in mr.file_diffs
-                        if diff.file_name == first_comment.position.file_path
+                        if diff.new_file_path == first_comment.position.new_file_path
                     ),
                     None,
                 )

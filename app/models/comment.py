@@ -12,7 +12,8 @@ class CommentType(str, Enum):
 
 
 class CommentPosition(BaseModel):
-    file_path: str
+    new_file_path: str
+    old_file_path: Optional[str] = None
     new_line_number: int
     old_line_number: Optional[int] = None
     diff_range: Optional[str] = None

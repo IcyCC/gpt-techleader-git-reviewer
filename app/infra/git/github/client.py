@@ -63,7 +63,8 @@ class GitHubClient(GitClientBase):
                     change_type = ChangeType.DELETE
 
                 file_diff = FileDiff(
-                    file_name=file["filename"],
+                    new_file_path=file["filename"],
+                    old_file_path=file["filename"],
                     change_type=change_type,
                     diff_content=file.get("patch", ""),
                     line_changes={},
@@ -103,21 +104,6 @@ class GitHubClient(GitClientBase):
             logger.exception(f"获取 PR 信息失败: {owner}/{repo}#{mr_id}")
             raise
 
-    async def get_file_content(
-        self, owner: str, repo: str, mr: MergeRequest, file_path: str
-    ) -> Optional[str]:
-        """获取指定文件的内容"""
-        try:
-            content_data = await self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/contents/{file_path}",
-                params={"ref": mr.source_branch},
-            )
-            import base64
-
-            return base64.b64decode(content_data["content"]).decode("utf-8")
-        except Exception:
-            return None
 
     async def create_comment(self, owner: str, repo: str, comment: Comment):
         """创建评论"""
@@ -139,7 +125,7 @@ class GitHubClient(GitClientBase):
                     json={
                         "body": comment.content,
                         "commit_id": commit_id,
-                        "path": comment.position.file_path,
+                        "path": comment.position.new_file_path,
                         "line": comment.position.new_line_number,
                         "side": "RIGHT",
                     },
@@ -169,7 +155,7 @@ class GitHubClient(GitClientBase):
         if "path" in comment_data and ("line" in comment_data or "original_line" in comment_data):
             line_no = comment_data["line"] if comment_data["line"] else comment_data["original_line"]
             position = CommentPosition(
-                file_path=comment_data["path"], new_line_number=line_no
+                new_file_path=comment_data["path"], new_line_number=line_no
             )
 
         # 确定评论类型

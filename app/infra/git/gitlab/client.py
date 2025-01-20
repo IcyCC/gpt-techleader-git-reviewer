@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
+from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -104,25 +105,15 @@ class GitLabClient(GitClientBase):
         except Exception as e:
             logger.exception(f"获取 MR 信息失败: {owner}/{repo}!{mr_id}")
             raise
-
-    async def get_file_content(
-        self, owner: str, repo: str, mr: MergeRequest, file_path: str
-    ) -> Optional[str]:
-        """获取指定文件的内容"""
-        try:
-            project_path = f"{owner}/{repo}"
-            encoded_project_path = project_path.replace("/", "%2F")
-            encoded_file_path = file_path.replace("/", "%2F")
-            
-            content_data = await self._request(
-                "GET",
-                f"/projects/{encoded_project_path}/repository/files/{encoded_file_path}",
-                params={"ref": mr.source_branch},
-            )
-            import base64
-            return base64.b64decode(content_data["content"]).decode("utf-8")
-        except Exception:
-            return None
+    
+    @lru_cache(maxsize=100)
+    async def _get_latest_mr_version(self, owner: str, repo: str, mr_id: str):
+        mr_data = await self._request(
+            "GET",
+            f"/projects/{owner}/{repo}/merge_requests/{mr_id}/versions"
+        )
+        return mr_data[0]
+        
 
     async def create_comment(self, owner: str, repo: str, comment: Comment):
         """创建评论"""
@@ -135,39 +126,25 @@ class GitLabClient(GitClientBase):
             if comment.comment_type == CommentType.FILE:
                 # 创建文件评论
                 assert comment.position is not None, "File comment requires position"
-                
-                # 获取 MR 的 commits 信息
-                commits = await self._request(
-                    "GET",
-                    f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/commits"
-                )
-                
-                if not commits:
-                    raise ValueError("No commits found in merge request")
-                
-                # 获取最新的 commit
-                latest_commit = commits[0]  # GitLab API 返回的 commits 按时间倒序排列
-                # 获取目标分支的最新 commit
-                mr_info = await self._request(
-                    "GET",
-                    f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}"
-                )
-                
                 url = f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/discussions"
-                await self._request(
-                    "POST",
-                    url,
-                    json={
+                mr_version = await self._get_latest_mr_version(owner, repo, comment.mr_id)
+                comment_body = {
                         "body": comment.content,
                         "position": {
                             "position_type": "text",
-                            "new_path": comment.position.file_path,
+                            "new_path": comment.position.new_file_path,
                             "new_line": comment.position.new_line_number,
-                            "base_sha": mr_info["diff_refs"]["base_sha"],
-                            "start_sha": mr_info["diff_refs"]["start_sha"],
-                            "head_sha": mr_info["diff_refs"]["head_sha"],
+                            "base_sha": mr_version["base_commit_sha"],
+                            "start_sha": mr_version["start_commit_sha"],
+                            "head_sha": mr_version["head_commit_sha"],
                         }
-                    },
+                    }
+                if comment.position.old_file_path:
+                    comment_body["position"]["old_path"] = comment.position.old_file_path
+                await self._request(
+                    "POST",
+                    url,
+                    json=comment_body,
                 )
             elif comment.comment_type == CommentType.REPLY:
                 # 回复评论
@@ -197,8 +174,10 @@ class GitLabClient(GitClientBase):
         position = None
         if "position" in note_data:
             position = CommentPosition(
-                file_path=note_data["position"]["new_path"],
+                new_file_path=note_data["position"]["new_path"],
                 new_line_number=note_data["position"]["new_line"],
+                old_file_path=note_data["position"]["old_path"],
+                old_line_number=note_data["position"]["old_line"],
             )
 
         comment_type = CommentType.GENERAL
