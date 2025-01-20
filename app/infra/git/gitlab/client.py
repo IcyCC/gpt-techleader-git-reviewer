@@ -137,6 +137,7 @@ Error: {str(e)}
             
             if comment.comment_type == CommentType.FILE:
                 # 创建文件评论
+                # 
                 assert comment.position is not None, "File comment requires position"
                 url = f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/discussions"
                 mr_version = await self._get_latest_mr_version(mr.project_id, comment.mr_id)
@@ -153,6 +154,10 @@ Error: {str(e)}
                     }
                 if comment.position.old_file_path:
                     comment_body["position"]["old_path"] = comment.position.old_file_path
+                
+                # only support comment on new file and new line
+                # TODO: support comment on old file and old line, 
+                # ref: https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff
                 await self._request(
                     "POST",
                     url,
