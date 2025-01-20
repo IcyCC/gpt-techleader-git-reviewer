@@ -159,7 +159,7 @@ class Bot(BaseModel):
         """发布评论到 Git 平台"""
         try:
             comment.content = f"{BOT_PREFIX} {comment.content}"
-            await git_client.create_comment(mr.owner, mr.repo, comment)
+            await git_client.create_comment(mr.owner, mr.repo, comment, mr)
             logger.info(f"评论发布成功: {comment.comment_id}")
         except Exception as e:
             logger.exception(f"评论发布失败: {comment.model_dump_json()}")

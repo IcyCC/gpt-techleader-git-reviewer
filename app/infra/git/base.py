@@ -19,7 +19,7 @@ class GitClientBase(ABC):
 
 
     @abstractmethod
-    async def create_comment(self, owner: str, repo: str, comment: Comment):
+    async def create_comment(self, owner: str, repo: str, comment: Comment, mr: MergeRequest):
         """创建评论"""
         pass
 

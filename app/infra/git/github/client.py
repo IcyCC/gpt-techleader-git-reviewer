@@ -105,9 +105,10 @@ class GitHubClient(GitClientBase):
             raise
 
 
-    async def create_comment(self, owner: str, repo: str, comment: Comment):
+    async def create_comment(self, owner: str, repo: str, comment: Comment, mr: MergeRequest):
         """创建评论"""
         try:
+            _ = mr
             logger.info(f"创建评论: {owner}/{repo}#{comment.mr_id}")
             if comment.comment_type == CommentType.FILE:
                 # 获取最新的 commit SHA

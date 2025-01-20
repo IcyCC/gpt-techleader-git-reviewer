@@ -43,3 +43,4 @@ class MergeRequest(BaseModel):
     labels: List[str] = []
     reviewers: List[str] = []
     comments_count: int = 0
+    project_id: Optional[int] = None

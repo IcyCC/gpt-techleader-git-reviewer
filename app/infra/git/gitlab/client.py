@@ -102,21 +102,22 @@ class GitLabClient(GitClientBase):
                     for reviewer in mr_data.get("reviewers", [])
                 ],
                 comments_count=mr_data.get("user_notes_count", 0),
+                project_id=mr_data["project_id"],
             )
         except Exception as e:
             logger.exception(f"获取 MR 信息失败: {owner}/{repo}!{mr_id}")
             raise
     
     @alru_cache(maxsize=100)
-    async def _get_latest_mr_version(self, owner: str, repo: str, mr_id: str):
+    async def _get_latest_mr_version(self, project_id: str, mr_id: str):
         mr_data = await self._request(
             "GET",
-            f"/projects/{owner}/{repo}/merge_requests/{mr_id}/versions"
+            f"/projects/{project_id}/merge_requests/{mr_id}/versions"
         )
         return mr_data[0]
         
 
-    async def create_comment(self, owner: str, repo: str, comment: Comment):
+    async def create_comment(self, owner: str, repo: str, comment: Comment, mr: MergeRequest):
         """创建评论"""
         try:
             project_path = f"{owner}/{repo}"
@@ -128,7 +129,7 @@ class GitLabClient(GitClientBase):
                 # 创建文件评论
                 assert comment.position is not None, "File comment requires position"
                 url = f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/discussions"
-                mr_version = await self._get_latest_mr_version(owner, repo, comment.mr_id)
+                mr_version = await self._get_latest_mr_version(mr.project_id, comment.mr_id)
                 comment_body = {
                         "body": comment.content,
                         "position": {
