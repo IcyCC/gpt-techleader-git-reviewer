@@ -69,7 +69,8 @@ class GitLabClient(GitClientBase):
                     change_type = ChangeType.DELETE
 
                 file_diff = FileDiff(
-                    file_name=change["new_path"],
+                    new_file_path=change["new_path"],
+                    old_file_path=change.get("old_path"),
                     change_type=change_type,
                     diff_content=change.get("diff", ""),
                     line_changes={},
