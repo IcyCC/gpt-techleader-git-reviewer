@@ -35,11 +35,22 @@ class GitHubClient(GitClientBase):
         }
         logger.info(f"请求: {method} {url}")
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
-            async with session.request(
-                method, f"{self.github_api_url}{url}", headers=headers, **kwargs
-            ) as response:
-                response.raise_for_status()
-                return await response.json()
+            try:
+                async with session.request(
+                    method, f"{self.github_api_url}{url}", headers=headers, **kwargs
+                ) as response:
+                    response.raise_for_status()
+                    return await response.json()
+            except Exception as e:
+                logger.error(f"""
+GitHub API Request Error:
+URL: {self.github_api_url}{url}
+Method: {method}
+Headers: {headers}
+Args: {kwargs}
+Error: {str(e)}
+""")
+                raise
 
     async def get_merge_request(
         self, owner: str, repo: str, mr_id: str
