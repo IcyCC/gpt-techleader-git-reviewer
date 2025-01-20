@@ -166,8 +166,8 @@ Error: {str(e)}
                     logger.warning(f"Failed to create file comment, falling back to general comment: {str(e)}")
                     # Fallback to general comment with file and line info
                     fallback_content = f"""Failed to create file comment. Adding as MR comment instead.
-File: {comment.position.new_file_path}
-Line: {comment.position.new_line_number}
+File: {comment.position.new_file_path} \n
+Line: {comment.position.new_line_number} \n
 Content: {comment.content}"""
                     
                     await self._request(
