@@ -33,7 +33,7 @@ class GitLabClient(GitClientBase):
         logger.info(f"请求: {method} {url}")
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.request(
-                method, f"{self.base_url}{url}", headers=headers, **kwargs
+                method, f"{self.base_url}{url}", headers=headers, **kwargs, ssl=False
             ) as response:
                 response.raise_for_status()
                 return await response.json()
@@ -56,7 +56,7 @@ class GitLabClient(GitClientBase):
             # 获取文件变更
             changes_data = await self._request(
                 "GET",
-                f"/projects/{encoded_project_path}/merge_requests/{mr_id}/changes"
+                f"/projects/{encoded_project_path}/merge_requests/{mr_id}/changes?access_raw_diffs=true"
             )
 
             file_diffs = []
@@ -171,7 +171,6 @@ class GitLabClient(GitClientBase):
                 )
             elif comment.comment_type == CommentType.REPLY:
                 # 回复评论
-                import ipdb;ipdb.set_trace()
                 assert comment.reply_to is not None, "Reply comment requires reply_to"
                 url = f"/projects/{encoded_project_path}/merge_requests/{comment.mr_id}/discussions/{comment.reply_to}/notes"
                 await self._request(
