@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from datetime import datetime
-from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -11,6 +10,7 @@ from app.infra.config.settings import get_settings
 from app.infra.git.base import GitClientBase
 from app.models.comment import Comment, CommentPosition, CommentType
 from app.models.git import ChangeType, FileDiff, MergeRequest, MergeRequestState
+from async_lru import alru_cache
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -107,7 +107,7 @@ class GitLabClient(GitClientBase):
             logger.exception(f"获取 MR 信息失败: {owner}/{repo}!{mr_id}")
             raise
     
-    @lru_cache(maxsize=100)
+    @alru_cache(maxsize=100)
     async def _get_latest_mr_version(self, owner: str, repo: str, mr_id: str):
         mr_data = await self._request(
             "GET",
