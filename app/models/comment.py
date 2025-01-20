@@ -30,8 +30,7 @@ class Comment(BaseModel):
     mr_id: str
     position: Optional[CommentPosition] = None
     parent_comment_id: Optional[str] = None
-    reactions: Dict[str, int] = {}  # 例如: {"thu
-    mbs_up": 2, "heart": 1}
+    reactions: Dict[str, int] = {} 
 
 
 class Discussion(BaseModel):
