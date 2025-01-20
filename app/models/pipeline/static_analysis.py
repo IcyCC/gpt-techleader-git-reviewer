@@ -32,9 +32,7 @@ class StaticAnalysisPipeline(ReviewPipeline):
                 "关注：\n"
                 "1. 代码风格\n"
                 "2. 命名规范\n"
-                "3. 代码异味\n"
-                "4. 潜在问题"
-                "5. typo"
+                "3. typo"
             )
         else:
             return (
@@ -43,9 +41,7 @@ class StaticAnalysisPipeline(ReviewPipeline):
                 "Focus on:\n"
                 "1. Code style\n"
                 "2. Naming\n"
-                "3. Code smells\n"
-                "4. Potential issues"
-                "5. typo"
+                "3. typo"
             )
 
     async def review(self, mr: MergeRequest) -> PipelineResult:
