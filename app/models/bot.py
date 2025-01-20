@@ -94,7 +94,7 @@ class Bot(BaseModel):
         # 创建总结评论
         if failed_pipelines:
             summaries.append(
-                f"\n⚠️ 以下 pipeline 执行失败: {', '.join([f'{name}: {error}' for name, error in failed_pipelines])}"
+                f"\n\n⚠️ 以下 pipeline 执行失败: {', '.join([f'{name}: {error}' for name, error in failed_pipelines])}"
             )
 
         # 如果所有 pipeline 都失败了
@@ -103,7 +103,7 @@ class Bot(BaseModel):
             return (
                 ReviewResult(
                     mr_id=mr.mr_id,
-                    summary="\n".join(summaries),
+                    summary="\n\n".join(summaries),
                     overall_status="error",
                     review_date=datetime.utcnow(),
                 ),
@@ -113,7 +113,7 @@ class Bot(BaseModel):
         return (
             ReviewResult(
                 mr_id=mr.mr_id,
-                summary="\n".join(summaries),
+                summary="\n\n".join(summaries),
                 overall_status="commented",
                 review_date=datetime.utcnow(),
             ),
