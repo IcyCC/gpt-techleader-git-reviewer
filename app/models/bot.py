@@ -13,7 +13,7 @@ from app.models.const import BOT_PREFIX
 from .comment import Comment, CommentType
 from .comment_handler import CommentHandler
 from .git import MergeRequest
-from .pipeline import LogicReviewPipeline, ReviewPipeline, StaticAnalysisPipeline
+from .pipeline import CodeReviewPipeline
 from .review import ReviewResult
 from .size_checker import SizeChecker
 
@@ -25,14 +25,14 @@ class Bot(BaseModel):
     name: str
     status: str
     current_reviews: List[str] = []
-    pipelines: List[ReviewPipeline] = []
+    pipelines: List[CodeReviewPipeline] = []
 
     class Config:
         arbitrary_types_allowed = True
 
     def __init__(self, **data):
         super().__init__(**data)
-        self.pipelines = [StaticAnalysisPipeline(), LogicReviewPipeline()]
+        self.pipelines = [C()]
 
     async def _handle_review_mr(
         self, mr: MergeRequest
