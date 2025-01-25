@@ -85,7 +85,7 @@ class GitLabWebhookHandler(BaseWebhookHandler):
 
             logger.info(f"Handling comment reply event: {owner}/{repo}!{mr_id} - {comment_id}")
             return None
-            return WebHookEvent(event_type=WebHookEventType.MERGE_REQUEST_COMMENT, event_data=MergeRequestCommentEvent(owner=owner, repo=repo, mr_id=mr_id, comment_id=comment_id, comment_body=comment_body))
+            # return WebHookEvent(event_type=WebHookEventType.MERGE_REQUEST_COMMENT, event_data=MergeRequestCommentEvent(owner=owner, repo=repo, mr_id=mr_id, comment_id=comment_id, comment_body=comment_body))
 
         logger.info(f"Ignoring unknown event type: {event_type}")
         return None
