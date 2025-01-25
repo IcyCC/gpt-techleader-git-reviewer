@@ -12,7 +12,8 @@ class CommentType(str, Enum):
 
 
 class CommentPosition(BaseModel):
-    file_path: str
+    new_file_path: str
+    old_file_path: Optional[str] = None
     new_line_number: int
     old_line_number: Optional[int] = None
     diff_range: Optional[str] = None
@@ -29,7 +30,7 @@ class Comment(BaseModel):
     mr_id: str
     position: Optional[CommentPosition] = None
     parent_comment_id: Optional[str] = None
-    reactions: Dict[str, int] = {}  # 例如: {"thumbs_up": 2, "heart": 1}
+    reactions: Dict[str, int] = {} 
 
 
 class Discussion(BaseModel):

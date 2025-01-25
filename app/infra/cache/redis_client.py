@@ -12,6 +12,8 @@ class RedisClient:
     def __init__(self):
         self.redis = aioredis.from_url(settings.REDIS_URL)
         self.ttl = settings.REDIS_CHAT_TTL
+        self.review_ttl = 60 * 60 * 24 * 7  # 7 days TTL for reviewed MRs
+        self.max_reviews = settings.MAX_MR_REVIEWS
 
     async def set_chat_history(self, session_id: str, messages: List[Dict[str, str]]):
         """存储聊天历史"""
@@ -30,3 +32,17 @@ class RedisClient:
         """删除聊天历史"""
         key = f"chat:history:{session_id}"
         await self.redis.delete(key)
+
+    async def increment_mr_review_count(self, owner: str, repo: str, mr_id: str) -> int:
+        """增加 MR 审查次数并返回当前次数"""
+        key = f"mr:review_count:{owner}:{repo}:{mr_id}"
+        count = await self.redis.incr(key)
+        if count == 1:  # 首次设置时添加过期时间
+            await self.redis.expire(key, self.review_ttl)
+        return count
+
+    async def get_mr_review_count(self, owner: str, repo: str, mr_id: str) -> int:
+        """获取 MR 已被审查的次数"""
+        key = f"mr:review_count:{owner}:{repo}:{mr_id}"
+        count = await self.redis.get(key)
+        return int(count) if count else 0

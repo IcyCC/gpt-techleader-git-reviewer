@@ -26,7 +26,7 @@ async def test_get_merge_request():
         print(f"Target Branch: {mr.target_branch}")
         print("\nFile Diffs:")
         for diff in mr.file_diffs:
-            print(f"- {diff.file_name} ({diff.change_type})")
+            print(f"- {diff.old_file_path} TO {diff.new_file_path} ({diff.change_type})")
         return True
     except Exception as e:
         print(f"Test failed: {str(e)}")

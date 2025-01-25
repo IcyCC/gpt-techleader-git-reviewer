@@ -35,11 +35,22 @@ class GitHubClient(GitClientBase):
         }
         logger.info(f"请求: {method} {url}")
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
-            async with session.request(
-                method, f"{self.github_api_url}{url}", headers=headers, **kwargs
-            ) as response:
-                response.raise_for_status()
-                return await response.json()
+            try:
+                async with session.request(
+                    method, f"{self.github_api_url}{url}", headers=headers, **kwargs
+                ) as response:
+                    response.raise_for_status()
+                    return await response.json()
+            except Exception as e:
+                logger.error(f"""
+GitHub API Request Error:
+URL: {self.github_api_url}{url}
+Method: {method}
+Headers: {headers}
+Args: {kwargs}
+Error: {str(e)}
+""")
+                raise
 
     async def get_merge_request(
         self, owner: str, repo: str, mr_id: str
@@ -63,7 +74,8 @@ class GitHubClient(GitClientBase):
                     change_type = ChangeType.DELETE
 
                 file_diff = FileDiff(
-                    file_name=file["filename"],
+                    new_file_path=file["filename"],
+                    old_file_path=file["filename"],
                     change_type=change_type,
                     diff_content=file.get("patch", ""),
                     line_changes={},
@@ -103,25 +115,11 @@ class GitHubClient(GitClientBase):
             logger.exception(f"获取 PR 信息失败: {owner}/{repo}#{mr_id}")
             raise
 
-    async def get_file_content(
-        self, owner: str, repo: str, mr: MergeRequest, file_path: str
-    ) -> Optional[str]:
-        """获取指定文件的内容"""
-        try:
-            content_data = await self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/contents/{file_path}",
-                params={"ref": mr.source_branch},
-            )
-            import base64
 
-            return base64.b64decode(content_data["content"]).decode("utf-8")
-        except Exception:
-            return None
-
-    async def create_comment(self, owner: str, repo: str, comment: Comment):
+    async def create_comment(self, owner: str, repo: str, comment: Comment, mr: MergeRequest):
         """创建评论"""
         try:
+            _ = mr
             logger.info(f"创建评论: {owner}/{repo}#{comment.mr_id}")
             if comment.comment_type == CommentType.FILE:
                 # 获取最新的 commit SHA
@@ -139,7 +137,7 @@ class GitHubClient(GitClientBase):
                     json={
                         "body": comment.content,
                         "commit_id": commit_id,
-                        "path": comment.position.file_path,
+                        "path": comment.position.new_file_path,
                         "line": comment.position.new_line_number,
                         "side": "RIGHT",
                     },
@@ -160,11 +158,6 @@ class GitHubClient(GitClientBase):
             logger.exception(f"创建评论失败: {owner}/{repo}#{comment.mr_id}")
             raise
 
-    async def resolve_review_thread(
-        self, owner: str, repo: str, mr_id: str, thread_id: str
-    ):
-        pass
-
     async def _convert_github_comment_to_model(
         self, owner: str, repo: str, mr: MergeRequest, comment_data: dict
     ) -> Comment:
@@ -174,7 +167,7 @@ class GitHubClient(GitClientBase):
         if "path" in comment_data and ("line" in comment_data or "original_line" in comment_data):
             line_no = comment_data["line"] if comment_data["line"] else comment_data["original_line"]
             position = CommentPosition(
-                file_path=comment_data["path"], new_line_number=line_no
+                new_file_path=comment_data["path"], new_line_number=line_no
             )
 
         # 确定评论类型
@@ -264,21 +257,3 @@ class GitHubClient(GitClientBase):
             logger.exception("webhook 验证过程中发生错误")
             return False
 
-    async def parse_webhook_event(
-        self, request: Request
-    ) -> Optional[tuple[str, str, str]]:
-        """解析 webhook 事件，返回 (owner, repo, pr_number)"""
-        event_type = request.headers.get("X-GitHub-Event")
-        if event_type != "pull_request":
-            return None
-
-        payload = await request.json()
-        action = payload["action"]
-        if action not in ["opened", "reopened", "synchronize"]:
-            return None
-
-        owner = payload["repository"]["owner"]["login"]
-        repo = payload["repository"]["name"]
-        pr_number = str(payload["pull_request"]["number"])
-
-        return owner, repo, pr_number

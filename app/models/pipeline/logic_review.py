@@ -32,7 +32,6 @@ class LogicReviewPipeline(ReviewPipeline):
                 "1. PR目的\n"
                 "2. 实现完整性\n"
                 "3. 方案合理性\n"
-                "4. 潜在问题\n\n"
                 "总结包含：\n"
                 "1. 业务目的\n"
                 "2. 实现评估\n"
@@ -46,7 +45,6 @@ class LogicReviewPipeline(ReviewPipeline):
                 "1. PR purpose\n"
                 "2. Implementation completeness\n"
                 "3. Solution design\n"
-                "4. Potential issues\n\n"
                 "Summary includes:\n"
                 "1. Business goal\n"
                 "2. Implementation review\n"
@@ -63,19 +61,29 @@ class LogicReviewPipeline(ReviewPipeline):
         for file_diff in mr.file_diffs:
             # 只包含变更的部分
             files_content.append(
-                f"File: {file_diff.file_name}\n"
+                f"file_old_path: {file_diff.old_file_path}\n"
+                f"file_new_path: {file_diff.new_file_path}\n"
                 f"```diff\n{file_diff.diff_content}\n```"
             )
 
         all_diffs = "\n\n".join(files_content)
 
         # 构建业务上下文
-        business_context = (
-            f"PR信息:\n"
-            f"标题: {mr.title}\n"
-            f"描述: {mr.description}\n"
-            f"变更:\n{all_diffs}"
-        )
+
+        if settings.GPT_LANGUAGE  == "中文":
+            business_context = (
+                f"PR信息:\n"
+                f"标题: {mr.title}\n"
+                f"描述: {mr.description}\n"
+                f"变更:\n{all_diffs}"
+            )
+        else:
+            business_context = (
+                f"PR information:\n"
+                f"Title: {mr.title}\n"
+                f"Description: {mr.description}\n"
+                f"Changes:\n{all_diffs}"
+            )
 
         system_prompt = Message("system", self._get_system_prompt())
         prompt = Message(

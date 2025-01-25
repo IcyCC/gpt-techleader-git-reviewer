@@ -1,19 +1,27 @@
 import asyncio
 from typing import Any, Dict, Union
+import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
+from app.infra.git.base_webhook_handler import WebHookEvent, WebHookEventType
 from app.infra.git.github.webhook_handler import GitHubWebhookHandler
+from app.infra.git.gitlab.webhook_handler import GitLabWebhookHandler
 from app.models.const import BOT_PREFIX
 from app.models.git import MergeRequest
 from app.models.review import ReviewResult
 from app.services.reviewer_service import ReviewerService
+from app.infra.config.settings import get_settings
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter()
+settings = get_settings()
 github_handler = GitHubWebhookHandler()
+gitlab_handler = GitLabWebhookHandler()
 
 
-@router.get("/api/v1/webhook/github")
+@router.get("/webhook/github")
 async def verify_webhook():
     return {"status": "Webhook verified", "message": "GET request received"}
 
@@ -44,55 +52,62 @@ async def process_comment(
         print(f"Error processing comment: {e}")
 
 
-@router.post("/github", response_model=Union[ReviewResult, Dict[str, Any]])
-async def handle_github_webhook(
+@router.post("/webhook/{service}", response_model=Union[ReviewResult, Dict[str, Any]])
+async def handle_git_webhook(
+    service: str,
     request: Request,
     background_tasks: BackgroundTasks,
     reviewer_service: ReviewerService = Depends(),
 ):
-    """处理来自 GitHub 的 webhook
-
-    支持以下事件：
-    1. ping: webhook 配置验证
-    2. PR 创建或更新时，触发代码审查
-    3. PR 评论时，如果不是机器人的评论则触发回复
+    """Handle webhooks from Git services
+    
+    Supports:
+    1. ping: webhook configuration verification
+    2. MR/PR creation triggers code review
+    3. MR/PR comments trigger replies if not from bot
     """
     try:
-        # 验证并解析 webhook
-        event_type, event_info = await github_handler.handle_webhook(request)
-        print(f"Received {event_type} event:", event_info)
+        # Select appropriate handler
+        if service.lower() == "github":
+            handler = github_handler
+        elif service.lower() == "gitlab":
+            handler = gitlab_handler
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported git service: {service}")
+
+        # Verify and parse webhook
+        event_info = await handler.handle_webhook(request)
+        print(f"Received  event:", event_info)
 
         if not event_info:
             return {"message": "Event ignored"}
 
-        # 处理 ping 事件
-        if event_type == "ping":
+        # Handle ping event
+        if event_info.event_type == WebHookEventType.PING:
             return {
                 "message": "Webhook configured successfully",
                 "event": "ping",
-                "data": event_info,
+                "data": {},
             }
 
-        # 处理 PR 事件
-        if event_type == "pull_request":
-            owner, repo, mr_id = event_info
-            # 异步处理 PRa
-            background_tasks.add_task(process_pr, owner, repo, mr_id, reviewer_service)
-            return {"message": f"PR review task for {owner}/{repo}#{mr_id} scheduled"}
-        # 处理评论事件
-        elif event_type == "pull_request_review_comment":
-            owner, repo, mr_id, comment_id, _ = event_info
-            # 异步处理评论
+        # Handle MR/PR event
+        if event_info.event_type == WebHookEventType.MERGE_REQUEST:
+            event_data = event_info.event_data
+            background_tasks.add_task(process_pr, event_data.owner, event_data.repo, event_data.mr_id, reviewer_service)
+            return {"message": f"MR review task for {event_data.owner}/{event_data.repo}#{event_data.mr_id} scheduled"}
+
+        # Handle comment event
+        elif event_info.event_type == WebHookEventType.MERGE_REQUEST_COMMENT:
+            event_data = event_info.event_data
             background_tasks.add_task(
-                process_comment, owner, repo, mr_id, comment_id, reviewer_service
+                process_comment, event_data.owner, event_data.repo, event_data.mr_id, event_data.comment_id, reviewer_service
             )
             return {
-                "message": f"Comment processing task for {owner}/{repo}#{mr_id} scheduled"
+                "message": f"Comment processing task for {event_data.owner}/{event_data.repo}#{event_data.mr_id} scheduled"
             }
         else:
-            return {"message": f"Event {event_type} ignored"}
-
-        return {"message": f"Event {event_type} processed"}
+            return {"message": f"Event {event_info.event_type} ignored"}
 
     except Exception as e:
+        logger.exception(f"Error handling webhook: {e}")
         raise HTTPException(status_code=500, detail=str(e))

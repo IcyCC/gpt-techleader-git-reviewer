@@ -17,15 +17,9 @@ class GitClientBase(ABC):
         """获取合并请求信息"""
         pass
 
-    @abstractmethod
-    async def get_file_content(
-        self, owner: str, repo: str, mr: MergeRequest, file_path: str
-    ) -> Optional[str]:
-        """获取指定文件的内容"""
-        pass
 
     @abstractmethod
-    async def create_comment(self, owner: str, repo: str, comment: Comment):
+    async def create_comment(self, owner: str, repo: str, comment: Comment, mr: MergeRequest):
         """创建评论"""
         pass
 
@@ -39,11 +33,4 @@ class GitClientBase(ABC):
     @abstractmethod
     async def verify_webhook(self, request: Request) -> bool:
         """验证 webhook 请求的合法性"""
-        pass
-
-    @abstractmethod
-    async def parse_webhook_event(
-        self, request: Request
-    ) -> Optional[Tuple[str, str, str]]:
-        """解析 webhook 事件，返回 (owner, repo, pr_number)"""
         pass

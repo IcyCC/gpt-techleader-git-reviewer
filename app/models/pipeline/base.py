@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 class AIReviewComment(BaseModel):
     """AI 返回的评论结构"""
 
-    file_path: str
+    new_file_path: str
+    old_file_path: Optional[str] = None
     new_line_number: Optional[int] = 1
     content: str
     type: str = "suggestion"  # suggestion, issue, praise
@@ -79,14 +80,15 @@ class ReviewPipeline(BaseModel):
         """获取不同语言的提示模板"""
         templates = {
             "中文": {
-                "system_role": "你是代码审查助手。提供简短精确的建议。只关注关键问题。每个文件最多2条评论。",
+                "system_role": "你是代码审查助手。提供简短精确的建议。只关注关键问题。",
                 "json_format": (
                     "使用以下JSON格式返回结果:\n"
                     "{\n"
                     '  "summary": "简短总结",\n'
                     '  "comments": [\n'
                     "    {\n"
-                    '      "file_path": "文件路径",\n'
+                    '      "old_file_path": "文件路径",\n'
+                    '      "new_file_path": "文件路径",\n'
                     '      "new_line_number": 行号,\n'
                     '      "content": "评论内容",\n'
                     '      "type": "suggestion|issue|praise"\n'
@@ -98,14 +100,15 @@ class ReviewPipeline(BaseModel):
                 "file_review_request": "审查此文件：",
             },
             "english": {
-                "system_role": "You are a code review assistant. Provide brief, precise suggestions. Focus only on critical issues. Maximum 2 comments per file.",
+                "system_role": "You are a code review assistant. Provide brief, precise suggestions. Focus only on critical issues.",
                 "json_format": (
                     "Use this JSON format:\n"
                     "{\n"
                     '  "summary": "brief summary",\n'
                     '  "comments": [\n'
                     "    {\n"
-                    '      "file_path": "file path",\n'
+                    '      "old_file_path": "file path",\n'
+                    '      "new_file_path": "file path",\n'
                     '      "new_line_number": line number,\n'
                     '      "content": "comment",\n'
                     '      "type": "suggestion|issue|praise"\n'
@@ -125,7 +128,8 @@ class ReviewPipeline(BaseModel):
     ) -> Comment:
         """从 AI 评论创建 Comment 实体"""
         position = CommentPosition(
-            file_path=ai_comment.file_path,
+            new_file_path=ai_comment.new_file_path,
+            old_file_path=ai_comment.old_file_path,
             new_line_number=ai_comment.new_line_number or 1,
         )
 

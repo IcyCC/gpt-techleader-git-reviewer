@@ -5,7 +5,8 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel
 
 from app.infra.config.settings import get_settings
-from app.infra.git.github.client import GitHubClient
+from app.infra.git.factory import GitClientFactory
+from app.infra.git.base import GitClientBase
 from app.infra.rate_limiter import RateLimiter
 from app.models.const import BOT_PREFIX
 
@@ -93,7 +94,7 @@ class Bot(BaseModel):
         # 创建总结评论
         if failed_pipelines:
             summaries.append(
-                f"\n⚠️ 以下 pipeline 执行失败: {', '.join([f'{name}: {error}' for name, error in failed_pipelines])}"
+                f"\n\n⚠️ 以下 pipeline 执行失败: {', '.join([f'{name}: {error}' for name, error in failed_pipelines])}"
             )
 
         # 如果所有 pipeline 都失败了
@@ -102,7 +103,7 @@ class Bot(BaseModel):
             return (
                 ReviewResult(
                     mr_id=mr.mr_id,
-                    summary="\n".join(summaries),
+                    summary="\n\n".join(summaries),
                     overall_status="error",
                     review_date=datetime.utcnow(),
                 ),
@@ -112,7 +113,7 @@ class Bot(BaseModel):
         return (
             ReviewResult(
                 mr_id=mr.mr_id,
-                summary="\n".join(summaries),
+                summary="\n\n".join(summaries),
                 overall_status="commented",
                 review_date=datetime.utcnow(),
             ),
@@ -121,7 +122,7 @@ class Bot(BaseModel):
 
     async def review_mr(self, mr: MergeRequest) -> ReviewResult:
         """执行 MR 审查"""
-        git_client = GitHubClient()
+        git_client = GitClientFactory.get_client()
         result, all_comments = await self._handle_review_mr(mr)
         if result.summary:
             summary_comment = Comment(
@@ -143,26 +144,22 @@ class Bot(BaseModel):
 
     async def handle_comment(
         self, mr: MergeRequest, comment: Comment
-    ) -> Optional[Comment]:
+    ) -> Comment:
         """处理评论回复"""
         comment_handler = CommentHandler(self.name)
-        comment, resolved = await comment_handler.handle_comment(mr, comment)
-        git_client = GitHubClient()
+        comment, _ = await comment_handler.handle_comment(mr, comment)
+        git_client = GitClientFactory.get_client()
         await self._post_comment(git_client, mr, comment)
-        if resolved:
-            await git_client.resolve_review_thread(
-                mr.owner, mr.repo, mr.mr_id, comment.comment_id
-            )
         return comment
 
     @staticmethod
     async def _post_comment(
-        git_client: GitHubClient, mr: MergeRequest, comment: Comment
+        git_client: GitClientBase, mr: MergeRequest, comment: Comment
     ):
         """发布评论到 Git 平台"""
         try:
             comment.content = f"{BOT_PREFIX} {comment.content}"
-            await git_client.create_comment(mr.owner, mr.repo, comment)
+            await git_client.create_comment(mr.owner, mr.repo, comment, mr)
             logger.info(f"评论发布成功: {comment.comment_id}")
         except Exception as e:
             logger.exception(f"评论发布失败: {comment.model_dump_json()}")

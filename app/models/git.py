@@ -12,10 +12,12 @@ class ChangeType(str, Enum):
 
 
 class FileDiff(BaseModel):
-    file_name: str
+    new_file_path: str
     change_type: ChangeType
     diff_content: str
+    old_file_path: Optional[str] = None
     line_changes: Dict[int, str] = {}  # 行号到变更内容的映射
+
 
 
 class MergeRequestState(str, Enum):
@@ -41,3 +43,4 @@ class MergeRequest(BaseModel):
     labels: List[str] = []
     reviewers: List[str] = []
     comments_count: int = 0
+    project_id: Optional[int] = None

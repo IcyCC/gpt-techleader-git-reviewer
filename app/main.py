@@ -29,7 +29,7 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(
-    webhook.router, prefix=f"{settings.API_V1_STR}/webhook", tags=["webhook"]
+    webhook.router, prefix=f"{settings.API_V1_STR}", tags=["webhook"]
 )
 app.include_router(review.router, prefix=f"{settings.API_V1_STR}", tags=["review"])
 
