@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     GITLAB_WEBHOOK_SECRET: Optional[str] = None
     GITLAB_REPOS: str = ""  # 格式：owner1/repo1,owner2/repo2
 
-
     # AI 审查限制
     MAX_FILES_PER_MR: int = 20  # MR 最大文件数
     MAX_LINES_PER_FILE: int = 1000  # 单个文件最大行数
