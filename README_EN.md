@@ -11,7 +11,7 @@ An AI-powered code review assistant that automatically provides code reviews and
 
 - Automated Code Review: Automatically triggered when PRs are created or updated, reviewing code style and business logic
 - Smart Comment Replies: Intelligent responses to developer comments
-- GitHub Support
+- GitHub and GitLab Support
 
 > Code developed by Cursor, freeing up productivity
 
