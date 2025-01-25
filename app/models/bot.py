@@ -32,7 +32,7 @@ class Bot(BaseModel):
 
     def __init__(self, **data):
         super().__init__(**data)
-        self.pipelines = [C()]
+        self.pipelines = [CodeReviewPipeline()]
 
     async def _handle_review_mr(
         self, mr: MergeRequest
