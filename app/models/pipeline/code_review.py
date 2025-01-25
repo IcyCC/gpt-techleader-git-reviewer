@@ -12,16 +12,17 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-class LogicReviewPipeline(ReviewPipeline):
-    """业务逻辑审查流水线"""
+class CodeReviewPipeline(ReviewPipeline):
+    """Comprehensive code review pipeline that handles both logic and static analysis"""
 
     def __init__(self):
         super().__init__(
-            name="Logic Review", description="Review business logic and implementation"
+            name="Code Review",
+            description="Review business logic, implementation, code style and potential issues",
         )
 
     def _get_system_prompt(self) -> str:
-        """获取系统提示"""
+        """Get system prompt for the AI reviewer"""
         templates = self.get_prompt_template(settings.GPT_LANGUAGE)
 
         if settings.GPT_LANGUAGE == "中文":
@@ -32,6 +33,13 @@ class LogicReviewPipeline(ReviewPipeline):
                 "1. PR目的\n"
                 "2. 实现完整性\n"
                 "3. 方案合理性\n"
+                "\n"
+                "代码分析：\n"
+                "1. 代码风格\n"
+                "2. 命名规范\n"
+                "3. 潜在问题\n"
+                "4. 性能考虑\n"
+                "\n"
                 "总结包含：\n"
                 "1. 业务目的\n"
                 "2. 实现评估\n"
@@ -45,6 +53,13 @@ class LogicReviewPipeline(ReviewPipeline):
                 "1. PR purpose\n"
                 "2. Implementation completeness\n"
                 "3. Solution design\n"
+                "\n"
+                "Code Analysis:\n"
+                "1. Code style\n"
+                "2. Naming conventions\n"
+                "3. Potential issues\n"
+                "4. Performance considerations\n"
+                "\n"
                 "Summary includes:\n"
                 "1. Business goal\n"
                 "2. Implementation review\n"
@@ -56,10 +71,9 @@ class LogicReviewPipeline(ReviewPipeline):
         session_id = ai_client.generate_session_id()
         templates = self.get_prompt_template(settings.GPT_LANGUAGE)
 
-        # 构建包含所有文件变更的提示
+        # Build prompt with all file changes
         files_content = []
         for file_diff in mr.file_diffs:
-            # 只包含变更的部分
             files_content.append(
                 f"file_old_path: {file_diff.old_file_path}\n"
                 f"file_new_path: {file_diff.new_file_path}\n"
@@ -68,9 +82,8 @@ class LogicReviewPipeline(ReviewPipeline):
 
         all_diffs = "\n\n".join(files_content)
 
-        # 构建业务上下文
-
-        if settings.GPT_LANGUAGE  == "中文":
+        # Build business context
+        if settings.GPT_LANGUAGE == "中文":
             business_context = (
                 f"PR信息:\n"
                 f"标题: {mr.title}\n"
@@ -95,9 +108,9 @@ class LogicReviewPipeline(ReviewPipeline):
         try:
             ai_review = AIReviewResponse.parse_raw_response(response)
         except Exception:
-            logger.exception(f"解析AI响应失败: {response[:200]}...")
+            logger.exception(f"Failed to parse AI response: {response[:200]}...")
             ai_review = AIReviewResponse(
-                summary="解析审查响应失败", comments=[]
+                summary="Failed to parse review response", comments=[]
             )
 
         comments = []
@@ -107,4 +120,4 @@ class LogicReviewPipeline(ReviewPipeline):
             comment = self._from_ai_comment(self.name, ai_comment, mr.mr_id)
             comments.append(comment)
 
-        return PipelineResult(comments=comments, summary=ai_review.summary)
+        return PipelineResult(comments=comments, summary=ai_review.summary) 
