@@ -72,6 +72,8 @@ class Settings(BaseSettings):
         try:
             repos = []
             for repo_str in self.GITHUB_REPOS.split(","):
+                if repo_str == "*":
+                    return [{"owner": "*", "name": "*", "enabled": True}]
                 if not repo_str:
                     continue
                 if "/" not in repo_str:
@@ -93,6 +95,8 @@ class Settings(BaseSettings):
         try:
             repos = []
             for repo_str in self.GITLAB_REPOS.split(","):
+                if repo_str == "*":
+                    return [{"owner": "*", "name": "*", "enabled": True}]
                 if not repo_str:
                     continue
                 if "/" not in repo_str:
@@ -108,7 +112,7 @@ class Settings(BaseSettings):
     def is_repo_allowed(self, owner: str, repo: str) -> bool:
         """检查仓库是否在允许列表中"""
         repos = self.gitlab_repos if self.GIT_SERVICE == "gitlab" else self.github_repos
-        if repos == "*":
+        if [r for r in repos if r["owner"] == "*" and r["name"] == "*"]:
             return True
         return any(
             r["owner"] == owner and r["name"] == repo and r.get("enabled", True)
