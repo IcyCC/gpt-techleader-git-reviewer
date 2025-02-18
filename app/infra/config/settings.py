@@ -108,6 +108,8 @@ class Settings(BaseSettings):
     def is_repo_allowed(self, owner: str, repo: str) -> bool:
         """检查仓库是否在允许列表中"""
         repos = self.gitlab_repos if self.GIT_SERVICE == "gitlab" else self.github_repos
+        if repos == "*":
+            return True
         return any(
             r["owner"] == owner and r["name"] == repo and r.get("enabled", True)
             for r in repos
