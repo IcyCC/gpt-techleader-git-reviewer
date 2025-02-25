@@ -119,7 +119,7 @@ async def handle_git_webhook(
         # Handle comment event
         elif event_info.event_type == WebHookEventType.MERGE_REQUEST_COMMENT:
             event_data = event_info.event_data
-            if '#ai-code:' in event_data.comment_body:
+            if '#ai:' in event_data.comment_body:
                 background_tasks.add_task(
                     process_comment_with_instruction, event_data.owner, event_data.repo, event_data.mr_id, reviewer_service, event_data.comment_body
                 )
