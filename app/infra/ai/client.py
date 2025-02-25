@@ -129,7 +129,7 @@ class AIClient:
         self,
         messages: List[Message],
         session_id: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = 0.3,
         stream: bool = False,
     ) -> str:
         """发送消息到 AI 并获取回复"""

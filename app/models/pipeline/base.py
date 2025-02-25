@@ -80,7 +80,7 @@ class ReviewPipeline(BaseModel):
         """获取不同语言的提示模板"""
         templates = {
             "中文": {
-                "system_role": "你是代码审查助手。提供简短精确的建议。只关注关键问题。",
+                "system_role": "你是代码审查助手。提供简短精确的建议。只关注需要修改的关键问题。",
                 "json_format": (
                     "使用以下JSON格式返回结果:\n"
                     "{\n"
@@ -100,7 +100,7 @@ class ReviewPipeline(BaseModel):
                 "file_review_request": "审查此文件：",
             },
             "english": {
-                "system_role": "You are a code review assistant. Provide brief, precise suggestions. Focus only on critical issues.",
+                "system_role": "You are a code review assistant. Provide brief, precise suggestions. Focus only on the critical issues that need to be clearly modified.",
                 "json_format": (
                     "Use this JSON format:\n"
                     "{\n"
