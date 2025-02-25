@@ -44,7 +44,7 @@ async def process_comment_with_instruction(
     comment_body: str,
 ):
     """异步处理带有指令的评论"""
-    match = re.search(r'#ai-code:\s*(\w+)', comment_body)
+    match = re.search(r'#ai:\s*(\w+)', comment_body)
     if match:
         instruction = match.group(1)
         if instruction == "review":
