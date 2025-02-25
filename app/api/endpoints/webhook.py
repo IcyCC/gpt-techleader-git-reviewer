@@ -1,4 +1,5 @@
 import asyncio
+import re
 from typing import Any, Dict, Union
 import logging
 
@@ -35,6 +36,25 @@ async def process_pr(
     except Exception as e:
         print(f"Error processing PR: {e}")
 
+async def process_comment_with_instruction(
+    owner: str,
+    repo: str,
+    mr_id: str,
+    reviewer_service: ReviewerService,
+    comment_body: str,
+):
+    """异步处理带有指令的评论"""
+    match = re.search(r'#ai-code:\s*(\w+)', comment_body)
+    if match:
+        instruction = match.group(1)
+        if instruction == "review":
+            await reviewer_service.review_mr(
+                owner=owner, repo=repo, mr_id=mr_id, check_limit=False
+            )
+        else:
+            logger.warning(f"Unknown instruction: {instruction}")
+    else:
+        logger.warning("No instruction found")
 
 async def process_comment(
     owner: str,
@@ -99,9 +119,14 @@ async def handle_git_webhook(
         # Handle comment event
         elif event_info.event_type == WebHookEventType.MERGE_REQUEST_COMMENT:
             event_data = event_info.event_data
-            background_tasks.add_task(
-                process_comment, event_data.owner, event_data.repo, event_data.mr_id, event_data.comment_id, reviewer_service
-            )
+            if '#ai-code:' in event_data.comment_body:
+                background_tasks.add_task(
+                    process_comment_with_instruction, event_data.owner, event_data.repo, event_data.mr_id, reviewer_service, event_data.comment_body
+                )
+            else:
+                background_tasks.add_task(
+                    process_comment, event_data.owner, event_data.repo, event_data.mr_id, event_data.comment_id, reviewer_service
+                )
             return {
                 "message": f"Comment processing task for {event_data.owner}/{event_data.repo}#{event_data.mr_id} scheduled"
             }

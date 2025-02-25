@@ -69,11 +69,6 @@ class GitLabWebhookHandler(BaseWebhookHandler):
                 return None
 
             # Only handle comment replies
-            note_type = payload.get("object_attributes", {}).get("type")
-            if note_type != "DiscussionNote":
-                logger.info("Ignoring non-reply comment")
-                return None
-
             mr_id = str(payload["merge_request"]["iid"])
             comment_id = str(payload["object_attributes"]["id"])
             comment_body = payload["object_attributes"]["note"]
@@ -84,8 +79,7 @@ class GitLabWebhookHandler(BaseWebhookHandler):
                 return None
 
             logger.info(f"Handling comment reply event: {owner}/{repo}!{mr_id} - {comment_id}")
-            return None
-            # return WebHookEvent(event_type=WebHookEventType.MERGE_REQUEST_COMMENT, event_data=MergeRequestCommentEvent(owner=owner, repo=repo, mr_id=mr_id, comment_id=comment_id, comment_body=comment_body))
+            return WebHookEvent(event_type=WebHookEventType.MERGE_REQUEST_COMMENT, event_data=MergeRequestCommentEvent(owner=owner, repo=repo, mr_id=mr_id, comment_id=comment_id, comment_body=comment_body))
 
         logger.info(f"Ignoring unknown event type: {event_type}")
         return None

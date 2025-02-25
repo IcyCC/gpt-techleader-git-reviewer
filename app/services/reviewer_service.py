@@ -18,11 +18,12 @@ class ReviewerService:
         self.redis_client = RedisClient()
         self.settings = get_settings()
 
-    async def review_mr(self, owner: str, repo: str, mr_id: str) -> ReviewResult:
+    async def review_mr(self, owner: str, repo: str, mr_id: str, check_limit: bool = True) -> ReviewResult:
         # 检查审查次数
-        review_count = await self.redis_client.get_mr_review_count(owner, repo, mr_id)
-        if review_count >= self.settings.MAX_MR_REVIEWS:
-            raise RuntimeError(f"MR {owner}/{repo}#{mr_id} has reached the maximum review limit of {self.settings.MAX_MR_REVIEWS}")
+        if check_limit:
+            review_count = await self.redis_client.get_mr_review_count(owner, repo, mr_id)
+            if review_count >= self.settings.MAX_MR_REVIEWS:
+                raise RuntimeError(f"MR {owner}/{repo}#{mr_id} has reached the maximum review limit of {self.settings.MAX_MR_REVIEWS}")
 
         # 获取 MR 信息并执行审查
         mr = await self.git_client.get_merge_request(owner, repo, mr_id)
