@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     GPT_API_KEY: str
     GPT_API_URL: str = "https://vip.apiyi.com/v1"
     GPT_MODEL: str = "claude-3-opus-20240229"
-    GPT_TEMPERATURE: float = 0.7
+    GPT_TEMPERATURE: float = 0.3
     GPT_LANGUAGE: str = "中文"
     GPT_TIMEOUT: int = 1200
     MAX_TOKENS: int = 10000000  # 每次请求的最大 token 数
@@ -64,60 +64,24 @@ class Settings(BaseSettings):
 
 
     @property
-    def github_repos(self) -> List[Dict[str, Any]]:
-        """解析仓库配置字符串"""
-        if self.GIT_SERVICE != "github":
-            return []
-            
-        try:
-            repos = []
-            for repo_str in self.GITHUB_REPOS.split(","):
-                if repo_str == "*":
-                    return [{"owner": "*", "name": "*", "enabled": True}]
-                if not repo_str:
-                    continue
-                if "/" not in repo_str:
-                    logger.warning(f"无效的仓库格式: {repo_str}")
-                    continue
-                owner, name = repo_str.strip().split("/")
-                repos.append({"owner": owner, "name": name, "enabled": True})
-            return repos
-        except Exception as e:
-            logger.error(f"解析仓库配置失败: {e}")
-            return []
+    def github_repos(self) -> List[str]:
+        return self.GITHUB_REPOS.split(",")
 
     @property
-    def gitlab_repos(self) -> List[Dict[str, Any]]:
+    def gitlab_repos(self) -> List[str]:
         """解析 GitLab 仓库配置字符串"""
         if self.GIT_SERVICE != "gitlab":
             return []
             
-        try:
-            repos = []
-            for repo_str in self.GITLAB_REPOS.split(","):
-                if repo_str == "*":
-                    return [{"owner": "*", "name": "*", "enabled": True}]
-                if not repo_str:
-                    continue
-                if "/" not in repo_str:
-                    logger.warning(f"无效的仓库格式: {repo_str}")
-                    continue
-                owner, name = repo_str.strip().split("/")
-                repos.append({"owner": owner, "name": name, "enabled": True})
-            return repos
-        except Exception as e:
-            logger.error(f"解析仓库配置失败: {e}")
-            return []
+        return self.GITLAB_REPOS.split(",")
 
     def is_repo_allowed(self, owner: str, repo: str) -> bool:
         """检查仓库是否在允许列表中"""
+        repo_repr = f"{owner}/{repo}"
         repos = self.gitlab_repos if self.GIT_SERVICE == "gitlab" else self.github_repos
-        if [r for r in repos if r["owner"] == "*" and r["name"] == "*"]:
+        if "*" in repos:
             return True
-        return any(
-            r["owner"] == owner and r["name"] == repo and r.get("enabled", True)
-            for r in repos
-        )
+        return repo_repr in repos
 
     def validate_git_config(self):
         """验证 Git 服务配置的完整性"""
